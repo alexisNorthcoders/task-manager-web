@@ -1,8 +1,10 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
   import { tasksStore } from '$lib/stores/tasks';
   import ProtectedRoute from '$lib/components/ProtectedRoute.svelte';
-  import type { CreateTaskInput } from '$lib/types';
+  import { getTaskTemplates } from '$lib/api/tasks';
+  import type { CreateTaskInput, TaskTemplate } from '$lib/types';
 
   let formData: CreateTaskInput = {
     title: '',
@@ -14,6 +16,44 @@
   let isLoading = false;
   let error = '';
   let validationErrors: Record<string, string> = {};
+  
+  // Template functionality
+  let templates: TaskTemplate[] = [];
+  let selectedTemplateId = '';
+  let templatesLoading = false;
+
+  onMount(async () => {
+    await loadTemplates();
+  });
+
+  async function loadTemplates() {
+    try {
+      templatesLoading = true;
+      templates = await getTaskTemplates();
+    } catch (err) {
+      console.error('Failed to load templates:', err);
+    } finally {
+      templatesLoading = false;
+    }
+  }
+
+  function applyTemplate(templateId: string) {
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      formData = {
+        ...formData,
+        title: template.title,
+        description: template.description || '',
+        estimationHours: template.estimationHours
+      };
+    }
+  }
+
+  function handleTemplateChange() {
+    if (selectedTemplateId) {
+      applyTemplate(selectedTemplateId);
+    }
+  }
 
   // Real-time validation
   $: {
@@ -104,6 +144,30 @@
     <main class="max-w-3xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <form on:submit|preventDefault={handleSubmit} class="space-y-6">
+          <!-- Template Selection -->
+          {#if templates.length > 0}
+            <div>
+              <label for="template" class="block text-sm font-medium text-gray-700 mb-2">
+                Start from Template (optional)
+              </label>
+              <select
+                id="template"
+                bind:value={selectedTemplateId}
+                on:change={handleTemplateChange}
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={isLoading || templatesLoading}
+              >
+                <option value="">Create from scratch</option>
+                {#each templates as template (template.id)}
+                  <option value={template.id}>{template.name} - {template.title}</option>
+                {/each}
+              </select>
+              <p class="mt-1 text-sm text-gray-500">
+                Select a template to pre-fill the form with default values
+              </p>
+            </div>
+          {/if}
+
           <!-- Title -->
           <div>
             <label for="title" class="block text-sm font-medium text-gray-700 mb-2">

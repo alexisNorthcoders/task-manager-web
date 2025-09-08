@@ -1,8 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import ProtectedRoute from '$lib/components/ProtectedRoute.svelte';
+  import NotificationCenter from '$lib/components/NotificationCenter.svelte';
+  import KeyboardShortcutsHelp from '$lib/components/KeyboardShortcutsHelp.svelte';
   import { tasksStore } from '$lib/stores/tasks';
-  import type { Task } from '$lib/types';
+  import { usersStore } from '$lib/stores/users';
+  import { selectedTaskIds, selectionHelpers } from '$lib/stores/selection';
+  import { bulkUpdateTasks, bulkDeleteTasks, bulkAssignUsers } from '$lib/api/tasks';
+  import { keyboardService } from '$lib/services/keyboard';
+  import type { Task, BulkUpdateTaskInput } from '$lib/types';
 
   let filteredTasks: Task[] = [];
   
@@ -12,9 +18,34 @@
   let sortBy = 'created';
   let sortOrder = 'desc';
 
+  // Bulk operations state
+  let showBulkActions = false;
+  let bulkOperationLoading = false;
+  let bulkOperationError = '';
+
+  // Keyboard shortcuts state
+  let showKeyboardHelp = false;
+
   onMount(async () => {
     await tasksStore.load();
+    await usersStore.load();
+
+    // Set up keyboard shortcut event listeners
+    document.addEventListener('keyboard-select-all', handleKeyboardSelectAll);
+    document.addEventListener('keyboard-bulk-delete', handleKeyboardBulkDelete);
+    document.addEventListener('keyboard-bulk-status', handleKeyboardBulkStatus);
+    document.addEventListener('keyboard-show-help', handleKeyboardShowHelp);
+
+    return () => {
+      document.removeEventListener('keyboard-select-all', handleKeyboardSelectAll);
+      document.removeEventListener('keyboard-bulk-delete', handleKeyboardBulkDelete);
+      document.removeEventListener('keyboard-bulk-status', handleKeyboardBulkStatus);
+      document.removeEventListener('keyboard-show-help', handleKeyboardShowHelp);
+    };
   });
+
+  // Reactive bulk actions visibility
+  $: showBulkActions = $selectedTaskIds.size > 0;
 
   function applyFilters() {
     let filtered = [...$tasksStore.tasks];
@@ -110,6 +141,100 @@
   $: if ($tasksStore.tasks || searchQuery !== undefined || statusFilter !== undefined || sortBy !== undefined || sortOrder !== undefined) {
     applyFilters();
   }
+
+  // Bulk operations functions
+  async function handleBulkDelete() {
+    if (!confirm(`Are you sure you want to delete ${$selectedTaskIds.size} selected tasks?`)) return;
+    
+    bulkOperationLoading = true;
+    bulkOperationError = '';
+
+    try {
+      const taskIds = Array.from($selectedTaskIds);
+      const result = await bulkDeleteTasks(taskIds);
+      
+      if (result.success) {
+        selectionHelpers.clear();
+        await tasksStore.load(); // Refresh tasks
+      } else {
+        bulkOperationError = `Failed to delete some tasks: ${result.errors.join(', ')}`;
+      }
+    } catch (err) {
+      bulkOperationError = `Failed to delete tasks: ${err instanceof Error ? err.message : 'Unknown error'}`;
+    } finally {
+      bulkOperationLoading = false;
+    }
+  }
+
+  async function handleBulkStatusUpdate(status: 'TODO' | 'IN_PROGRESS' | 'DONE') {
+    bulkOperationLoading = true;
+    bulkOperationError = '';
+
+    try {
+      const taskIds = Array.from($selectedTaskIds);
+      const input: BulkUpdateTaskInput = { status, completed: status === 'DONE' };
+      const result = await bulkUpdateTasks(taskIds, input);
+      
+      if (result.success) {
+        selectionHelpers.clear();
+        await tasksStore.load(); // Refresh tasks
+      } else {
+        bulkOperationError = `Failed to update some tasks: ${result.errors.join(', ')}`;
+      }
+    } catch (err) {
+      bulkOperationError = `Failed to update tasks: ${err instanceof Error ? err.message : 'Unknown error'}`;
+    } finally {
+      bulkOperationLoading = false;
+    }
+  }
+
+  async function handleBulkAssign(userIds: string[]) {
+    bulkOperationLoading = true;
+    bulkOperationError = '';
+
+    try {
+      const taskIds = Array.from($selectedTaskIds);
+      const result = await bulkAssignUsers(taskIds, userIds);
+      
+      if (result.success) {
+        selectionHelpers.clear();
+        await tasksStore.load(); // Refresh tasks
+      } else {
+        bulkOperationError = `Failed to assign users to some tasks: ${result.errors.join(', ')}`;
+      }
+    } catch (err) {
+      bulkOperationError = `Failed to assign users: ${err instanceof Error ? err.message : 'Unknown error'}`;
+    } finally {
+      bulkOperationLoading = false;
+    }
+  }
+
+  function handleSelectAll() {
+    const taskIds = filteredTasks.map(task => task.id);
+    if (selectionHelpers.areAllSelected(taskIds, $selectedTaskIds)) {
+      selectionHelpers.deselectAll(taskIds);
+    } else {
+      selectionHelpers.selectAll(taskIds);
+    }
+  }
+
+  // Keyboard event handlers
+  function handleKeyboardSelectAll() {
+    handleSelectAll();
+  }
+
+  function handleKeyboardBulkDelete() {
+    handleBulkDelete();
+  }
+
+  function handleKeyboardBulkStatus(event: CustomEvent) {
+    const { status } = event.detail;
+    handleBulkStatusUpdate(status);
+  }
+
+  function handleKeyboardShowHelp() {
+    showKeyboardHelp = true;
+  }
 </script>
 
 <svelte:head>
@@ -124,6 +249,19 @@
         <div class="flex justify-between items-center py-4">
           <h1 class="text-2xl font-bold text-gray-900">Tasks</h1>
           <div class="flex items-center space-x-4">
+            <NotificationCenter />
+            <button
+              on:click={() => showKeyboardHelp = true}
+              class="p-2 text-gray-600 hover:text-gray-500 rounded-lg"
+              title="Keyboard shortcuts (?)"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </button>
+            <a href="/templates" class="text-blue-600 hover:text-blue-500 font-medium">
+              Templates
+            </a>
             <a href="/tasks/new" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
               New Task
             </a>
@@ -185,10 +323,102 @@
         </div>
       </div>
 
-      <!-- Task Count -->
-      <div class="mb-4 text-sm text-gray-600">
-        Showing {filteredTasks.length} of {$tasksStore.tasks.length} tasks
+      <!-- Task Count and Selection Info -->
+      <div class="mb-4 flex items-center justify-between">
+        <div class="text-sm text-gray-600">
+          Showing {filteredTasks.length} of {$tasksStore.tasks.length} tasks
+          {#if $selectedTaskIds.size > 0}
+            <span class="ml-2 text-blue-600 font-medium">
+              ({$selectedTaskIds.size} selected)
+            </span>
+          {/if}
+        </div>
+
+        {#if filteredTasks.length > 0}
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectionHelpers.areAllSelected(filteredTasks.map(t => t.id), $selectedTaskIds)}
+                indeterminate={selectionHelpers.areSomeSelected(filteredTasks.map(t => t.id), $selectedTaskIds)}
+                on:change={handleSelectAll}
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              Select all
+            </label>
+          </div>
+        {/if}
       </div>
+
+      <!-- Bulk Actions Toolbar -->
+      {#if showBulkActions}
+        <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <span class="font-medium text-blue-900">
+                {$selectedTaskIds.size} task{$selectedTaskIds.size !== 1 ? 's' : ''} selected
+              </span>
+              
+              <div class="flex items-center gap-2">
+                <!-- Bulk Status Updates -->
+                <button
+                  on:click={() => handleBulkStatusUpdate('TODO')}
+                  disabled={bulkOperationLoading}
+                  class="px-3 py-1 text-sm bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                >
+                  Mark as To Do
+                </button>
+                <button
+                  on:click={() => handleBulkStatusUpdate('IN_PROGRESS')}
+                  disabled={bulkOperationLoading}
+                  class="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 disabled:opacity-50"
+                >
+                  Mark In Progress
+                </button>
+                <button
+                  on:click={() => handleBulkStatusUpdate('DONE')}
+                  disabled={bulkOperationLoading}
+                  class="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-md hover:bg-green-200 disabled:opacity-50"
+                >
+                  Mark Complete
+                </button>
+
+                <!-- Bulk Delete -->
+                <button
+                  on:click={handleBulkDelete}
+                  disabled={bulkOperationLoading}
+                  class="px-3 py-1 text-sm bg-red-100 text-red-800 rounded-md hover:bg-red-200 disabled:opacity-50"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+
+            <button
+              on:click={() => selectionHelpers.clear()}
+              class="text-gray-500 hover:text-gray-700"
+              title="Clear selection"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          {#if bulkOperationLoading}
+            <div class="mt-3 flex items-center gap-2 text-blue-700">
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              Processing...
+            </div>
+          {/if}
+
+          {#if bulkOperationError}
+            <div class="mt-3 text-red-700 text-sm">
+              {bulkOperationError}
+            </div>
+          {/if}
+        </div>
+      {/if}
 
       <!-- Error Message -->
       {#if $tasksStore.error}
@@ -225,20 +455,29 @@
           {#each filteredTasks as task (task.id)}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
               <div class="flex items-start justify-between">
-                <!-- Task Content -->
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center space-x-3">
-                    <!-- Completion Checkbox -->
-                    <button
-                      on:click={() => toggleTaskCompletion(task)}
-                      class="flex-shrink-0 w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors {task.completed ? 'bg-green-500 border-green-500' : ''}"
-                    >
-                      {#if task.completed}
-                        <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                      {/if}
-                    </button>
+                <!-- Task Selection and Content -->
+                <div class="flex items-start space-x-3 flex-1 min-w-0">
+                  <!-- Multi-select Checkbox -->
+                  <input
+                    type="checkbox"
+                    checked={selectionHelpers.isSelected(task.id, $selectedTaskIds)}
+                    on:change={() => selectionHelpers.toggle(task.id)}
+                    class="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center space-x-3">
+                      <!-- Completion Checkbox -->
+                      <button
+                        on:click={() => toggleTaskCompletion(task)}
+                        class="flex-shrink-0 w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors {task.completed ? 'bg-green-500 border-green-500' : ''}"
+                      >
+                        {#if task.completed}
+                          <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                          </svg>
+                        {/if}
+                      </button>
 
                     <!-- Task Title -->
                     <h3 class="text-lg font-medium text-gray-900 {task.completed ? 'line-through text-gray-500' : ''}">
@@ -295,6 +534,7 @@
                       </div>
                     </div>
                   {/if}
+                  </div>
                 </div>
 
                 <!-- Actions -->
@@ -317,4 +557,7 @@
       {/if}
     </main>
   </div>
+
+  <!-- Keyboard Shortcuts Help Modal -->
+  <KeyboardShortcutsHelp bind:show={showKeyboardHelp} />
 </ProtectedRoute>
