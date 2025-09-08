@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
-import type { User } from '../types';
+import type { User, AuthResponse } from '../types';
 import { apiClient } from '../api/client';
 
 interface AuthState {
@@ -20,6 +20,26 @@ function createAuthStore() {
 
   return {
     subscribe,
+    
+    setAuth: (authResponse: AuthResponse) => {
+      // Convert AuthResponse to User object
+      const user: User = {
+        id: '', // We don't have ID from auth response
+        username: authResponse.username,
+        email: authResponse.email,
+        firstName: '', // We don't have these from auth response
+        lastName: '',
+        role: authResponse.role,
+        createdAt: new Date().toISOString()
+      };
+      
+      update(state => ({
+        ...state,
+        user,
+        isAuthenticated: true,
+        isLoading: false
+      }));
+    },
     
     setUser: (user: User) => {
       update(state => ({

@@ -15,6 +15,47 @@
   let confirmPassword = '';
   let isLoading = false;
   let error = '';
+  let validationErrors: Record<string, string> = {};
+  
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  
+  // Real-time validation
+  $: {
+    validationErrors = {};
+    
+    if (formData.username && formData.username.length < 3) {
+      validationErrors.username = 'Username must be at least 3 characters';
+    }
+    
+    if (formData.email && !emailRegex.test(formData.email)) {
+      validationErrors.email = 'Please enter a valid email address';
+    }
+    
+    if (formData.firstName && formData.firstName.trim().length < 1) {
+      validationErrors.firstName = 'First name is required';
+    }
+    
+    if (formData.lastName && formData.lastName.trim().length < 1) {
+      validationErrors.lastName = 'Last name is required';
+    }
+    
+    if (formData.password && formData.password.length < 6) {
+      validationErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    if (confirmPassword && formData.password !== confirmPassword) {
+      validationErrors.confirmPassword = 'Passwords do not match';
+    }
+  }
+  
+  $: isFormValid = formData.username.length >= 3 && 
+                   formData.email && emailRegex.test(formData.email) &&
+                   formData.firstName.trim().length > 0 &&
+                   formData.lastName.trim().length > 0 &&
+                   formData.password.length >= 6 &&
+                   formData.password === confirmPassword &&
+                   Object.keys(validationErrors).length === 0;
 
   async function handleSubmit() {
     if (!formData.username || !formData.email || !formData.firstName || !formData.lastName || !formData.password) {
@@ -37,9 +78,10 @@
 
     try {
       const response = await register(formData);
-      auth.setUser(response.user);
+      auth.setAuth(response);
       goto('/dashboard');
     } catch (err) {
+      console.error('Registration error:', err);
       error = err instanceof Error ? err.message : 'Registration failed';
     } finally {
       isLoading = false;
@@ -70,10 +112,13 @@
               type="text"
               required
               bind:value={formData.firstName}
-              class="input mt-1"
+              class="input mt-1 {validationErrors.firstName ? 'border-red-500 focus:ring-red-500' : ''}"
               placeholder="First name"
               disabled={isLoading}
             />
+            {#if validationErrors.firstName}
+              <p class="mt-1 text-sm text-red-600">{validationErrors.firstName}</p>
+            {/if}
           </div>
           
           <div>
@@ -83,10 +128,13 @@
               type="text"
               required
               bind:value={formData.lastName}
-              class="input mt-1"
+              class="input mt-1 {validationErrors.lastName ? 'border-red-500 focus:ring-red-500' : ''}"
               placeholder="Last name"
               disabled={isLoading}
             />
+            {#if validationErrors.lastName}
+              <p class="mt-1 text-sm text-red-600">{validationErrors.lastName}</p>
+            {/if}
           </div>
         </div>
         
@@ -97,10 +145,13 @@
             type="text"
             required
             bind:value={formData.username}
-            class="input mt-1"
+            class="input mt-1 {validationErrors.username ? 'border-red-500 focus:ring-red-500' : ''}"
             placeholder="Choose a username"
             disabled={isLoading}
           />
+          {#if validationErrors.username}
+            <p class="mt-1 text-sm text-red-600">{validationErrors.username}</p>
+          {/if}
         </div>
         
         <div>
@@ -110,10 +161,13 @@
             type="email"
             required
             bind:value={formData.email}
-            class="input mt-1"
+            class="input mt-1 {validationErrors.email ? 'border-red-500 focus:ring-red-500' : ''}"
             placeholder="Enter your email"
             disabled={isLoading}
           />
+          {#if validationErrors.email}
+            <p class="mt-1 text-sm text-red-600">{validationErrors.email}</p>
+          {/if}
         </div>
         
         <div>
@@ -123,10 +177,13 @@
             type="password"
             required
             bind:value={formData.password}
-            class="input mt-1"
+            class="input mt-1 {validationErrors.password ? 'border-red-500 focus:ring-red-500' : ''}"
             placeholder="Choose a password"
             disabled={isLoading}
           />
+          {#if validationErrors.password}
+            <p class="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+          {/if}
         </div>
         
         <div>
@@ -136,10 +193,13 @@
             type="password"
             required
             bind:value={confirmPassword}
-            class="input mt-1"
+            class="input mt-1 {validationErrors.confirmPassword ? 'border-red-500 focus:ring-red-500' : ''}"
             placeholder="Confirm your password"
             disabled={isLoading}
           />
+          {#if validationErrors.confirmPassword}
+            <p class="mt-1 text-sm text-red-600">{validationErrors.confirmPassword}</p>
+          {/if}
         </div>
       </div>
 
@@ -152,8 +212,8 @@
       <div>
         <button
           type="submit"
-          disabled={isLoading}
-          class="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isLoading || !isFormValid}
+          class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
         >
           {isLoading ? 'Creating account...' : 'Create account'}
         </button>

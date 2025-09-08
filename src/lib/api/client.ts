@@ -57,8 +57,23 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || 'Authentication failed');
+      let errorMessage = 'Authentication failed';
+      
+      try {
+        const errorData = await response.text();
+        // Try to parse as JSON first
+        try {
+          const parsed = JSON.parse(errorData);
+          errorMessage = parsed.message || parsed.error || errorData;
+        } catch {
+          // If not JSON, use the text directly
+          errorMessage = errorData || `HTTP ${response.status}: ${response.statusText}`;
+        }
+      } catch {
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     return response.json();

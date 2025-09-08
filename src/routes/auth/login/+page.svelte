@@ -11,6 +11,24 @@
   
   let isLoading = false;
   let error = '';
+  let validationErrors: Record<string, string> = {};
+  
+  // Real-time validation
+  $: {
+    validationErrors = {};
+    
+    if (formData.username && formData.username.length < 3) {
+      validationErrors.username = 'Username must be at least 3 characters';
+    }
+    
+    if (formData.password && formData.password.length < 6) {
+      validationErrors.password = 'Password must be at least 6 characters';
+    }
+  }
+  
+  $: isFormValid = formData.username.length >= 3 && 
+                   formData.password.length >= 6 && 
+                   Object.keys(validationErrors).length === 0;
 
   async function handleSubmit() {
     if (!formData.username || !formData.password) {
@@ -23,9 +41,10 @@
 
     try {
       const response = await login(formData);
-      auth.setUser(response.user);
+      auth.setAuth(response);
       goto('/dashboard');
     } catch (err) {
+      console.error('Login error:', err);
       error = err instanceof Error ? err.message : 'Login failed';
     } finally {
       isLoading = false;
@@ -55,10 +74,13 @@
             type="text"
             required
             bind:value={formData.username}
-            class="input mt-1"
+            class="input mt-1 {validationErrors.username ? 'border-red-500 focus:ring-red-500' : ''}"
             placeholder="Enter your username"
             disabled={isLoading}
           />
+          {#if validationErrors.username}
+            <p class="mt-1 text-sm text-red-600">{validationErrors.username}</p>
+          {/if}
         </div>
         
         <div>
@@ -68,10 +90,13 @@
             type="password"
             required
             bind:value={formData.password}
-            class="input mt-1"
+            class="input mt-1 {validationErrors.password ? 'border-red-500 focus:ring-red-500' : ''}"
             placeholder="Enter your password"
             disabled={isLoading}
           />
+          {#if validationErrors.password}
+            <p class="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+          {/if}
         </div>
       </div>
 
@@ -84,8 +109,8 @@
       <div>
         <button
           type="submit"
-          disabled={isLoading}
-          class="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isLoading || !isFormValid}
+          class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
         >
           {isLoading ? 'Signing in...' : 'Sign in'}
         </button>

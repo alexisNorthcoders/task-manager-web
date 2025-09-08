@@ -1,22 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { auth } from '$lib/stores/auth';
-  import { goto } from '$app/navigation';
   import { getTasks } from '$lib/api/tasks';
+  import ProtectedRoute from '$lib/components/ProtectedRoute.svelte';
   import type { Task } from '$lib/types';
 
   let tasks: Task[] = [];
   let isLoading = true;
   let error = '';
 
-  $: if (!$auth.isAuthenticated && !$auth.isLoading) {
-    goto('/auth/login');
-  }
-
   onMount(async () => {
-    if ($auth.isAuthenticated) {
-      await loadTasks();
-    }
+    await loadTasks();
   });
 
   async function loadTasks() {
@@ -43,11 +37,7 @@
   <title>Dashboard - Task Manager</title>
 </svelte:head>
 
-{#if $auth.isLoading}
-  <div class="min-h-screen flex items-center justify-center">
-    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-  </div>
-{:else if $auth.isAuthenticated}
+<ProtectedRoute>
   <div class="min-h-screen bg-gray-50">
     <!-- Header -->
     <header class="bg-white shadow-sm border-b">
@@ -172,4 +162,4 @@
       </div>
     </main>
   </div>
-{/if}
+</ProtectedRoute>

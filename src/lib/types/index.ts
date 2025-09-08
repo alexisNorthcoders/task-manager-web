@@ -23,7 +23,10 @@ export interface Task {
 
 export interface AuthResponse {
   token: string;
-  user: User;
+  type: string;
+  username: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
 }
 
 export interface CreateTaskInput {

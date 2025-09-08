@@ -21,6 +21,15 @@ export async function register(userData: RegisterInput): Promise<AuthResponse> {
   return response;
 }
 
+export function getCurrentUser(): User | null {
+  const token = apiClient.getToken();
+  if (!token) return null;
+  
+  // For now, we'll need to decode the token or make an API call to get user details
+  // This is a simplified version - in production you'd want proper JWT decoding
+  return null;
+}
+
 export function logout(): void {
   apiClient.clearAuthToken();
 }
