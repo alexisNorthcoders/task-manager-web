@@ -276,6 +276,25 @@
                       </span>
                     {/if}
                   </div>
+
+                  <!-- Assigned Users -->
+                  {#if task.assignedUsers && task.assignedUsers.length > 0}
+                    <div class="mt-3">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs text-gray-500 flex items-center gap-1">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 013 0z"/>
+                          </svg>
+                          Assigned to:
+                        </span>
+                        {#each task.assignedUsers as user, index (user.id)}
+                          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {user.firstName} {user.lastName}
+                          </span>
+                        {/each}
+                      </div>
+                    </div>
+                  {/if}
                 </div>
 
                 <!-- Actions -->

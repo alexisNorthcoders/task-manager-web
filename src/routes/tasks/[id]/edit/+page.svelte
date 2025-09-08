@@ -3,8 +3,10 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { getTask, updateTask } from '$lib/api/tasks';
+  import { assignUsersToTask, unassignUsersFromTask } from '$lib/api/users';
+  import { usersStore } from '$lib/stores/users';
   import ProtectedRoute from '$lib/components/ProtectedRoute.svelte';
-  import type { Task, UpdateTaskInput } from '$lib/types';
+  import type { Task, UpdateTaskInput, User } from '$lib/types';
 
   let task: Task | null = null;
   let formData: UpdateTaskInput = {
@@ -20,12 +22,19 @@
   let isSaving = false;
   let error = '';
   let validationErrors: Record<string, string> = {};
+  
+  // User assignment state
+  let selectedUserIds: string[] = [];
+  let isAssigningUsers = false;
 
   $: taskId = $page.params.id;
 
   onMount(async () => {
     if (taskId) {
-      await loadTask(taskId);
+      await Promise.all([
+        loadTask(taskId),
+        usersStore.load()
+      ]);
     }
   });
 
@@ -44,6 +53,9 @@
         status: task.status,
         completed: task.completed
       };
+      
+      // Initialize selected users
+      selectedUserIds = task.assignedUsers.map(user => user.id);
     } catch (err) {
       console.error('Failed to load task:', err);
       error = err instanceof Error ? err.message : 'Failed to load task';
@@ -119,6 +131,41 @@
 
   function handleCancel() {
     goto('/tasks');
+  }
+
+  async function handleUserAssignment() {
+    if (!task || !taskId) return;
+
+    isAssigningUsers = true;
+    error = '';
+
+    try {
+      // Get current and new user IDs
+      const currentUserIds = task.assignedUsers.map(user => user.id);
+      const usersToAdd = selectedUserIds.filter(id => !currentUserIds.includes(id));
+      const usersToRemove = currentUserIds.filter(id => !selectedUserIds.includes(id));
+
+      // Apply changes
+      if (usersToAdd.length > 0) {
+        task = await assignUsersToTask(taskId, usersToAdd);
+      }
+      if (usersToRemove.length > 0) {
+        task = await unassignUsersFromTask(taskId, usersToRemove);
+      }
+    } catch (err) {
+      console.error('Failed to update user assignments:', err);
+      error = err instanceof Error ? err.message : 'Failed to update user assignments';
+    } finally {
+      isAssigningUsers = false;
+    }
+  }
+
+  function toggleUserSelection(userId: string) {
+    if (selectedUserIds.includes(userId)) {
+      selectedUserIds = selectedUserIds.filter(id => id !== userId);
+    } else {
+      selectedUserIds = [...selectedUserIds, userId];
+    }
   }
 
   // Sync status and completed fields
@@ -276,6 +323,68 @@
                   <p class="mt-1 text-sm text-red-600">{validationErrors.estimationHours}</p>
                 {/if}
               </div>
+            </div>
+
+            <!-- User Assignment -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <label class="block text-sm font-medium text-gray-700">
+                  Assigned Users
+                </label>
+                <button
+                  type="button"
+                  on:click={handleUserAssignment}
+                  disabled={isAssigningUsers || isSaving}
+                  class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {isAssigningUsers ? 'Updating...' : 'Update Assignments'}
+                </button>
+              </div>
+
+              <!-- Current assigned users -->
+              {#if task && task.assignedUsers.length > 0}
+                <div class="mb-3">
+                  <p class="text-xs text-gray-500 mb-2">Currently assigned:</p>
+                  <div class="flex flex-wrap gap-2">
+                    {#each task.assignedUsers as user (user.id)}
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {user.firstName} {user.lastName} (@{user.username})
+                      </span>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+
+              <!-- User selection -->
+              {#if $usersStore.isLoading}
+                <div class="text-center py-4 text-gray-500">Loading users...</div>
+              {:else if $usersStore.error}
+                <div class="text-red-600 text-sm">{$usersStore.error}</div>
+              {:else if $usersStore.users.length === 0}
+                <div class="text-gray-500 text-sm">No users available</div>
+              {:else}
+                <div class="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                  {#each $usersStore.users as user (user.id)}
+                    <label class="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={selectedUserIds.includes(user.id)}
+                        on:change={() => toggleUserSelection(user.id)}
+                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                        disabled={isAssigningUsers || isSaving}
+                      />
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900">
+                          {user.firstName} {user.lastName}
+                        </p>
+                        <p class="text-xs text-gray-500">
+                          @{user.username} • {user.email} • {user.role}
+                        </p>
+                      </div>
+                    </label>
+                  {/each}
+                </div>
+              {/if}
             </div>
 
             <!-- Error Message -->

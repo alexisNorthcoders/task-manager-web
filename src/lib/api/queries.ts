@@ -94,3 +94,37 @@ export const GET_USERS = `
     }
   }
 `;
+
+export const ASSIGN_USERS_TO_TASK = `
+  mutation AssignUsersToTask($taskId: ID!, $userIds: [ID!]!) {
+    assignUsersToTask(taskId: $taskId, userIds: $userIds) {
+      id
+      title
+      assignedUsers {
+        id
+        username
+        firstName
+        lastName
+        email
+        role
+      }
+    }
+  }
+`;
+
+export const UNASSIGN_USERS_FROM_TASK = `
+  mutation UnassignUsersFromTask($taskId: ID!, $userIds: [ID!]!) {
+    unassignUsersFromTask(taskId: $taskId, userIds: $userIds) {
+      id
+      title
+      assignedUsers {
+        id
+        username
+        firstName
+        lastName
+        email
+        role
+      }
+    }
+  }
+`;
