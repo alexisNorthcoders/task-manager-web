@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import { auth } from '$lib/stores/auth';
   import { getTasks } from '$lib/api/tasks';
   import ProtectedRoute from '$lib/components/ProtectedRoute.svelte';
@@ -108,9 +109,9 @@
       <div class="mb-8">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <div class="flex flex-wrap gap-3">
-          <a href="/tasks/new" class="btn-primary">Create New Task</a>
-          <a href="/tasks" class="btn-secondary">View All Tasks</a>
-          <button on:click={loadTasks} class="btn-secondary" disabled={isLoading}>
+          <a href="/tasks/new" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">Create New Task</a>
+          <a href="/tasks" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors">View All Tasks</a>
+          <button on:click={loadTasks} class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50" disabled={isLoading}>
             {isLoading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
