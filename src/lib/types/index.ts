@@ -19,6 +19,9 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   assignedUsers: User[];
+  comments: TaskComment[];
+  activities: TaskActivity[];
+  attachments: TaskAttachment[];
 }
 
 export interface AuthResponse {
@@ -94,6 +97,87 @@ export interface BulkUpdateTaskInput {
   completed?: boolean;
   assignedUserIds?: string[];
   dueDate?: string;
+}
+
+// Phase 2 new types
+export interface TaskComment {
+  id: string;
+  task: Task;
+  author: User;
+  content: string;
+  parentComment?: TaskComment;
+  createdAt: string;
+  updatedAt: string;
+  replies: TaskComment[];
+}
+
+export interface TaskActivity {
+  id: string;
+  task: Task;
+  user: User;
+  activityType: ActivityType;
+  description: string;
+  oldValue?: string;
+  newValue?: string;
+  createdAt: string;
+}
+
+export interface TaskAttachment {
+  id: string;
+  task: Task;
+  uploader: User;
+  filename: string;
+  originalFilename: string;
+  contentType: string;
+  fileSize: number;
+  filePath: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  isImage: boolean;
+  fileSizeFormatted: string;
+}
+
+export interface TaskAttachmentResponse {
+  id: string;
+  filename: string;
+  originalFilename: string;
+  contentType: string;
+  fileSize: number;
+  filePath: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  isImage: boolean;
+  fileSizeFormatted: string;
+  uploaderUsername: string;
+  uploaderFirstName: string;
+  uploaderLastName: string;
+}
+
+export type ActivityType = 
+  | 'TASK_CREATED'
+  | 'TASK_UPDATED'
+  | 'TASK_DELETED'
+  | 'TASK_ASSIGNED'
+  | 'TASK_UNASSIGNED'
+  | 'TASK_STATUS_CHANGED'
+  | 'TASK_DUE_DATE_CHANGED'
+  | 'TASK_ESTIMATION_CHANGED'
+  | 'COMMENT_ADDED'
+  | 'COMMENT_UPDATED'
+  | 'COMMENT_DELETED'
+  | 'ATTACHMENT_ADDED'
+  | 'ATTACHMENT_DELETED';
+
+export interface CreateTaskCommentInput {
+  taskId: string;
+  content: string;
+  parentCommentId?: string;
+}
+
+export interface UpdateTaskCommentInput {
+  content: string;
 }
 
 // WebSocket notification types

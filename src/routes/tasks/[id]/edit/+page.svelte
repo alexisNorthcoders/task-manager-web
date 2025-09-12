@@ -4,9 +4,14 @@
   import { goto } from '$app/navigation';
   import { getTask, updateTask } from '$lib/api/tasks';
   import { assignUsersToTask, unassignUsersFromTask } from '$lib/api/users';
+  import { getTaskComments } from '$lib/api/comments';
+  import { getTaskActivities } from '$lib/api/activities';
   import { usersStore } from '$lib/stores/users';
   import ProtectedRoute from '$lib/components/ProtectedRoute.svelte';
-  import type { Task, UpdateTaskInput, User } from '$lib/types';
+  import TaskComments from '$lib/components/TaskComments.svelte';
+  import TaskActivities from '$lib/components/TaskActivities.svelte';
+  import TaskAttachments from '$lib/components/TaskAttachments.svelte';
+  import type { Task, UpdateTaskInput, User, TaskComment, TaskActivity, TaskAttachment } from '$lib/types';
 
   let task: Task | null = null;
   let formData: UpdateTaskInput = {
@@ -27,7 +32,15 @@
   let selectedUserIds: string[] = [];
   let isAssigningUsers = false;
 
-  $: taskId = $page.params.id;
+  // Tab state
+  let activeTab = 'details';
+  let comments: TaskComment[] = [];
+  let activities: TaskActivity[] = [];
+  let attachments: TaskAttachment[] = [];
+  let isLoadingComments = false;
+  let isLoadingActivities = false;
+
+  $: taskId = $page.params.id || '';
 
   onMount(async () => {
     if (taskId) {
@@ -37,6 +50,62 @@
       ]);
     }
   });
+
+  async function loadComments() {
+    if (!taskId || isLoadingComments) return;
+    
+    try {
+      isLoadingComments = true;
+      comments = await getTaskComments(taskId);
+    } catch (err) {
+      console.error('Failed to load comments:', err);
+    } finally {
+      isLoadingComments = false;
+    }
+  }
+
+  async function loadActivities() {
+    if (!taskId || isLoadingActivities) return;
+    
+    try {
+      isLoadingActivities = true;
+      activities = await getTaskActivities(taskId);
+    } catch (err) {
+      console.error('Failed to load activities:', err);
+    } finally {
+      isLoadingActivities = false;
+    }
+  }
+
+  function handleTabChange(tab: string) {
+    activeTab = tab;
+    
+    if (tab === 'comments' && comments.length === 0) {
+      loadComments();
+    } else if (tab === 'activities' && activities.length === 0) {
+      loadActivities();
+    }
+  }
+
+  function handleCommentAdded(comment: TaskComment) {
+    comments = [...comments, comment];
+  }
+
+  function handleCommentUpdated(comment: TaskComment) {
+    comments = comments.map(c => c.id === comment.id ? comment : c);
+  }
+
+  function handleCommentDeleted(commentId: string) {
+    comments = comments.filter(c => c.id !== commentId);
+  }
+
+  function handleAttachmentAdded(attachment: TaskAttachment) {
+    attachments = [attachment, ...attachments];
+  }
+
+  function handleAttachmentDeleted(attachmentId: string) {
+    attachments = attachments.filter(a => a.id !== attachmentId);
+  }
 
   async function loadTask(id: string) {
     try {
@@ -111,7 +180,7 @@
     try {
       // Clean up the data
       const updateData: UpdateTaskInput = {
-        title: formData.title.trim(),
+        title: formData.title?.trim() || '',
         description: formData.description?.trim() || undefined,
         dueDate: formData.dueDate || undefined,
         estimationHours: formData.estimationHours || undefined,
@@ -195,7 +264,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-3xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <main class="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       {#if isLoading}
         <div class="flex justify-center py-12">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -208,7 +277,41 @@
           </button>
         </div>
       {:else if task}
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8 px-6">
+              <button
+                on:click={() => handleTabChange('details')}
+                class="py-4 px-1 border-b-2 font-medium text-sm {activeTab === 'details' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+              >
+                Details
+              </button>
+              <button
+                on:click={() => handleTabChange('comments')}
+                class="py-4 px-1 border-b-2 font-medium text-sm {activeTab === 'comments' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+              >
+                Comments ({comments.length})
+              </button>
+              <button
+                on:click={() => handleTabChange('activities')}
+                class="py-4 px-1 border-b-2 font-medium text-sm {activeTab === 'activities' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+              >
+                Activity ({activities.length})
+              </button>
+              <button
+                on:click={() => handleTabChange('attachments')}
+                class="py-4 px-1 border-b-2 font-medium text-sm {activeTab === 'attachments' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+              >
+                Attachments ({attachments.length})
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <!-- Tab Content -->
+        {#if activeTab === 'details'}
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <form on:submit|preventDefault={handleSubmit} class="space-y-6">
             <!-- Title -->
             <div>
@@ -413,7 +516,30 @@
               </button>
             </div>
           </form>
-        </div>
+          </div>
+        {:else if activeTab === 'comments'}
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <TaskComments
+              {taskId}
+              {comments}
+              onCommentAdded={handleCommentAdded}
+              onCommentUpdated={handleCommentUpdated}
+              onCommentDeleted={handleCommentDeleted}
+            />
+          </div>
+        {:else if activeTab === 'activities'}
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <TaskActivities {activities} />
+          </div>
+        {:else if activeTab === 'attachments'}
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <TaskAttachments
+              {taskId}
+              onAttachmentAdded={handleAttachmentAdded}
+              onAttachmentDeleted={handleAttachmentDeleted}
+            />
+          </div>
+        {/if}
       {/if}
     </main>
   </div>

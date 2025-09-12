@@ -28,7 +28,7 @@
       const template = await createTaskTemplate({
         name: formData.name.trim(),
         title: formData.title.trim(),
-        description: formData.description.trim() || undefined,
+        description: formData.description?.trim() || undefined,
         estimationHours: formData.estimationHours || undefined
       });
 

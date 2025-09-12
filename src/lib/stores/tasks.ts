@@ -49,7 +49,10 @@ function createTasksStore() {
           estimationHours: taskData.estimationHours,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          assignedUsers: []
+          assignedUsers: [],
+          comments: [],
+          activities: [],
+          attachments: []
         };
 
         update(state => ({

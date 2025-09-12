@@ -86,6 +86,23 @@ class ApiClient {
   isAuthenticated() {
     return !!this.token;
   }
+
+  async uploadFile(endpoint: string, formData: FormData) {
+    const response = await fetch(`${PUBLIC_API_URL || 'http://localhost:8080'}/api/${endpoint}`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': this.token ? `Bearer ${this.token}` : ''
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    return response.json();
+  }
 }
 
 export const apiClient = new ApiClient();
