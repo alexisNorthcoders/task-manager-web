@@ -1,17 +1,21 @@
-# Use Node.js as the base image
-FROM node:24-alpine
-
-# Set the working directory
+FROM node:24-alpine AS builder
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+# Add build arg and env var
+ARG PUBLIC_API_URL
+ENV PUBLIC_API_URL=$PUBLIC_API_URL
+RUN npm run build
+RUN npm prune --production
 
-# Copy only the build output folder
-COPY build/ ./build/
-
-# Set the working directory to the build folder
-WORKDIR /app/build
-
-# Expose the port the app runs on
+FROM node:24-alpine
+WORKDIR /app
+COPY --from=builder /app/build build/
+COPY --from=builder /app/node_modules node_modules/
+COPY package.json .
 EXPOSE 3000
-
-# Start the app
-CMD ["node", "index.js"]
+ENV NODE_ENV=production
+# Pass the env var to runtime as well
+ENV PUBLIC_API_URL=$PUBLIC_API_URL
+CMD [ "node", "build" ]

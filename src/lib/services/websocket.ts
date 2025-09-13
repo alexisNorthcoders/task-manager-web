@@ -1,4 +1,5 @@
-import { writable, get } from 'svelte/store';
+import { writable } from 'svelte/store';
+import { PUBLIC_API_URL } from '$env/static/public';
 import type { WebSocketNotification } from '../types';
 
 // WebSocket connection state
@@ -26,9 +27,8 @@ class WebSocketService {
     
     try {
       // Get the WebSocket URL from environment or use default
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      const wsUrl = `${protocol}//${host}/ws`;
+      const apiUrl = PUBLIC_API_URL || 'http://localhost:8080';
+      const wsUrl = apiUrl.replace('http', 'ws') + '/ws';
 
       console.log('Connecting to WebSocket:', wsUrl);
       this.ws = new WebSocket(wsUrl);

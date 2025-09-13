@@ -13,16 +13,8 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '24'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build project
-        run: npm run build
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -35,4 +27,10 @@ jobs:
         with:
           context: .
           push: true
-          tags: alexiscreoulo/taskmanager-client:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            PUBLIC_API_URL=${{ secrets.PUBLIC_API_URL }}
+          tags: |
+            alexiscreoulo/taskmanager-client:latest
+            alexiscreoulo/taskmanager-client:${{ github.sha }}
