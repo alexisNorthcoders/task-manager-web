@@ -61,46 +61,31 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="grid grid-cols-3 gap-6 mb-8">
         <div class="card">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span class="text-blue-600 font-semibold">{tasks.length}</span>
-              </div>
+          <div class="text-center">
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <span class="text-blue-600 font-bold text-lg">{tasks.length}</span>
             </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Total Tasks</p>
-              <p class="text-2xl font-bold text-gray-900">{tasks.length}</p>
-            </div>
+            <p class="text-sm font-medium text-gray-600">Tasks</p>
           </div>
         </div>
 
         <div class="card">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <span class="text-yellow-600 font-semibold">{pendingTasks}</span>
-              </div>
+          <div class="text-center">
+            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <span class="text-yellow-600 font-bold text-lg">{pendingTasks}</span>
             </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Pending</p>
-              <p class="text-2xl font-bold text-gray-900">{pendingTasks}</p>
-            </div>
+            <p class="text-sm font-medium text-gray-600">Pending</p>
           </div>
         </div>
 
         <div class="card">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                <span class="text-green-600 font-semibold">{completedTasks}</span>
-              </div>
+          <div class="text-center">
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <span class="text-green-600 font-bold text-lg">{completedTasks}</span>
             </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Completed</p>
-              <p class="text-2xl font-bold text-gray-900">{completedTasks}</p>
-            </div>
+            <p class="text-sm font-medium text-gray-600">Completed</p>
           </div>
         </div>
       </div>
