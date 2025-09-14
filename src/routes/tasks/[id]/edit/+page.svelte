@@ -8,6 +8,8 @@
   import { getTaskActivities } from '$lib/api/activities';
   import { usersStore } from '$lib/stores/users';
   import ProtectedRoute from '$lib/components/ProtectedRoute.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
+  import PageContainer from '$lib/components/PageContainer.svelte';
   import TaskComments from '$lib/components/TaskComments.svelte';
   import TaskActivities from '$lib/components/TaskActivities.svelte';
   import TaskAttachments from '$lib/components/TaskAttachments.svelte';
@@ -189,7 +191,7 @@
       };
 
       await updateTask(taskId, updateData);
-      goto('/tasks');
+      goto('/dashboard');
     } catch (err) {
       console.error('Failed to update task:', err);
       error = err instanceof Error ? err.message : 'Failed to update task';
@@ -199,7 +201,7 @@
   }
 
   function handleCancel() {
-    goto('/tasks');
+    goto('/dashboard');
   }
 
   async function handleUserAssignment() {
@@ -250,21 +252,13 @@
 </svelte:head>
 
 <ProtectedRoute>
-  <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center py-4">
-          <h1 class="text-2xl font-bold text-gray-900">Edit Task</h1>
-          <a href="/tasks" class="text-gray-600 hover:text-gray-500">
-            ← Back to Tasks
-          </a>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+  <PageHeader 
+    title="Edit Task" 
+    subtitle="Update task details and manage assignments"
+    showBackButton={false}
+  />
+  
+  <PageContainer maxWidth="max-w-6xl">
       {#if isLoading}
         <div class="flex justify-center py-12">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -431,9 +425,9 @@
             <!-- User Assignment -->
             <div>
               <div class="flex items-center justify-between mb-3">
-                <label class="block text-sm font-medium text-gray-700">
+                <span class="block text-sm font-medium text-gray-700">
                   Assigned Users
-                </label>
+                </span>
                 <button
                   type="button"
                   on:click={handleUserAssignment}
@@ -541,6 +535,5 @@
           </div>
         {/if}
       {/if}
-    </main>
-  </div>
+  </PageContainer>
 </ProtectedRoute>

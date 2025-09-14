@@ -56,12 +56,17 @@
   <title>Login - Task Manager</title>
 </svelte:head>
 
-<div class="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50">
+<div class="min-h-screen flex items-center justify-center px-4 py-12">
   <div class="max-w-md w-full space-y-8">
     <div class="text-center">
+      <div class="flex justify-center mb-6">
+        <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center">
+          <span class="text-white font-bold text-2xl">TM</span>
+        </div>
+      </div>
       <h2 class="text-3xl font-bold text-gray-900">Sign in to your account</h2>
       <p class="mt-2 text-sm text-gray-600">
-        Or <a href="/auth/register" class="text-primary-600 hover:text-primary-500 font-medium">create a new account</a>
+        Or <a href="/auth/register" class="text-blue-600 hover:text-blue-500 font-medium">create a new account</a>
       </p>
     </div>
     
@@ -110,7 +115,7 @@
         <button
           type="submit"
           disabled={isLoading || !isFormValid}
-          class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+          class="w-full btn-primary"
         >
           {isLoading ? 'Signing in...' : 'Sign in'}
         </button>
