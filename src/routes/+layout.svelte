@@ -5,6 +5,7 @@
   import { auth } from '$lib/stores/auth';
   import { webSocketService } from '$lib/services/websocket';
   import SideMenu from '$lib/components/SideMenu.svelte';
+  import NotificationCenter from '$lib/components/NotificationCenter.svelte';
   import '../app.css';
 
   onMount(() => {
@@ -53,7 +54,7 @@
   {#if $auth.isAuthenticated && !isAuthPage && !isHomePage}
     <header class="bg-white shadow-sm border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-10">
+        <div class="flex justify-between items-center h-14">
           <!-- Logo and Navigation -->
           <div class="flex items-center space-x-4">
             <button
@@ -84,6 +85,8 @@
 
           <!-- User Menu -->
           <div class="flex items-center space-x-4">
+            <!-- Notifications -->
+            <NotificationCenter />
             <span class="text-sm text-gray-600">
               Welcome, {$auth.user?.firstName || 'User'}!
             </span>
@@ -100,7 +103,7 @@
   {/if}
 
   <!-- Main Content -->
-  <main class="{isAuthPage || isHomePage ? '' : 'pt-0'}">
+  <main class="{isAuthPage || isHomePage ? '' : 'pt-2'}">
     <slot />
   </main>
 

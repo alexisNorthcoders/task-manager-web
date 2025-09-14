@@ -109,17 +109,9 @@
     }
   }
 
-  function handleSelectAll() {
-    const taskIds = filteredTasks.map(task => task.id);
-    if (selectionHelpers.areAllSelected(taskIds, $selectedTaskIds)) {
-      selectionHelpers.deselectAll(taskIds);
-    } else {
-      selectionHelpers.selectAll(taskIds);
-    }
-  }
 </script>
 
-<div class="space-y-6">
+<div class="space-y-6 {showBulkActions ? 'pb-20 sm:pb-16' : ''}">
   <!-- Search and Selection -->
   <div class="space-y-4">
     <div class="flex flex-col sm:flex-row gap-4">
@@ -132,101 +124,9 @@
         />
       </div>
       
-      {#if filteredTasks.length > 0}
-        <div class="flex items-center gap-2">
-          <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={selectionHelpers.areAllSelected(filteredTasks.map(t => t.id), $selectedTaskIds)}
-              indeterminate={selectionHelpers.areSomeSelected(filteredTasks.map(t => t.id), $selectedTaskIds)}
-              on:change={handleSelectAll}
-              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            Select all
-          </label>
-        </div>
-      {/if}
     </div>
   </div>
 
-  <!-- Bulk Actions -->
-  {#if showBulkActions}
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2">
-          <div class="w-2 h-2 bg-blue-600 rounded-full"></div>
-          <span class="font-semibold text-blue-900">
-            {$selectedTaskIds.size} task{$selectedTaskIds.size !== 1 ? 's' : ''} selected
-          </span>
-        </div>
-        <button
-          on:click={() => selectionHelpers.clear()}
-          class="p-1 text-gray-500 hover:text-gray-700 rounded"
-          title="Clear selection"
-          aria-label="Clear selection"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-
-      <div class="space-y-3">
-        <div>
-          <h3 class="text-sm font-medium text-gray-700 mb-2">Move to:</h3>
-          <div class="flex flex-wrap gap-2">
-            <button
-              on:click={() => handleBulkStatusUpdate('TODO')}
-              disabled={bulkOperationLoading}
-              class="px-3 py-2 text-sm font-medium bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
-              To Do
-            </button>
-            <button
-              on:click={() => handleBulkStatusUpdate('IN_PROGRESS')}
-              disabled={bulkOperationLoading}
-              class="px-3 py-2 text-sm font-medium bg-white text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 disabled:opacity-50"
-            >
-              In Progress
-            </button>
-            <button
-              on:click={() => handleBulkStatusUpdate('DONE')}
-              disabled={bulkOperationLoading}
-              class="px-3 py-2 text-sm font-medium bg-white text-green-700 border border-green-300 rounded-lg hover:bg-green-50 disabled:opacity-50"
-            >
-              Complete
-            </button>
-          </div>
-        </div>
-
-        <div class="pt-2 border-t border-blue-200">
-          <button
-            on:click={handleBulkDelete}
-            disabled={bulkOperationLoading}
-            class="px-3 py-2 text-sm font-medium bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50 flex items-center gap-2"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
-            Delete Selected
-          </button>
-        </div>
-      </div>
-
-      {#if bulkOperationLoading}
-        <div class="mt-4 flex items-center gap-2 text-blue-700">
-          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          <span class="text-sm">Processing...</span>
-        </div>
-      {/if}
-
-      {#if bulkOperationError}
-        <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <span class="text-red-700 text-sm">{bulkOperationError}</span>
-        </div>
-      {/if}
-    </div>
-  {/if}
 
   <!-- Error Message -->
   {#if $tasksStore.error}
@@ -328,6 +228,153 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Sticky Bulk Actions Bar - Mobile First -->
+  {#if showBulkActions}
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+      <div class="px-3 py-2">
+        <!-- Mobile Layout -->
+        <div class="block sm:hidden">
+          <!-- Selected count and close button -->
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 bg-blue-600 rounded-full"></div>
+              <span class="font-medium text-gray-900 text-sm">
+                {$selectedTaskIds.size} selected
+              </span>
+            </div>
+            <button
+              on:click={() => selectionHelpers.clear()}
+              class="p-1 text-gray-500 hover:text-gray-700 rounded"
+              title="Clear selection"
+              aria-label="Clear selection"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Action buttons - full width on mobile -->
+          <div class="space-y-2">
+            <div class="flex gap-1">
+              <button
+                on:click={() => handleBulkStatusUpdate('TODO')}
+                disabled={bulkOperationLoading}
+                class="flex-1 px-2 py-2 text-xs font-medium bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 transition-colors"
+              >
+                To Do
+              </button>
+              <button
+                on:click={() => handleBulkStatusUpdate('IN_PROGRESS')}
+                disabled={bulkOperationLoading}
+                class="flex-1 px-2 py-2 text-xs font-medium bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50 transition-colors"
+              >
+                In Progress
+              </button>
+              <button
+                on:click={() => handleBulkStatusUpdate('DONE')}
+                disabled={bulkOperationLoading}
+                class="flex-1 px-2 py-2 text-xs font-medium bg-green-100 text-green-700 rounded hover:bg-green-200 disabled:opacity-50 transition-colors"
+              >
+                Complete
+              </button>
+            </div>
+            
+            <button
+              on:click={handleBulkDelete}
+              disabled={bulkOperationLoading}
+              class="w-full px-3 py-2 text-sm font-medium bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              Delete Selected
+            </button>
+          </div>
+        </div>
+
+        <!-- Desktop Layout -->
+        <div class="hidden sm:block max-w-7xl mx-auto">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-blue-600 rounded-full"></div>
+                <span class="font-semibold text-gray-900">
+                  {$selectedTaskIds.size} task{$selectedTaskIds.size !== 1 ? 's' : ''} selected
+                </span>
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-600">Move to:</span>
+                <div class="flex gap-2">
+                  <button
+                    on:click={() => handleBulkStatusUpdate('TODO')}
+                    disabled={bulkOperationLoading}
+                    class="px-3 py-1.5 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                  >
+                    To Do
+                  </button>
+                  <button
+                    on:click={() => handleBulkStatusUpdate('IN_PROGRESS')}
+                    disabled={bulkOperationLoading}
+                    class="px-3 py-1.5 text-sm font-medium bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition-colors"
+                  >
+                    In Progress
+                  </button>
+                  <button
+                    on:click={() => handleBulkStatusUpdate('DONE')}
+                    disabled={bulkOperationLoading}
+                    class="px-3 py-1.5 text-sm font-medium bg-green-100 text-green-700 rounded-lg hover:bg-green-200 disabled:opacity-50 transition-colors"
+                  >
+                    Complete
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button
+                on:click={handleBulkDelete}
+                disabled={bulkOperationLoading}
+                class="px-3 py-1.5 text-sm font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 flex items-center gap-2 transition-colors"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Delete Selected
+              </button>
+              
+              <button
+                on:click={() => selectionHelpers.clear()}
+                class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Clear selection"
+                aria-label="Clear selection"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading and Error States -->
+        {#if bulkOperationLoading}
+          <div class="mt-2 flex items-center gap-2 text-blue-700">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <span class="text-sm">Processing...</span>
+          </div>
+        {/if}
+
+        {#if bulkOperationError}
+          <div class="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm">
+            <span class="text-red-700">{bulkOperationError}</span>
+          </div>
+        {/if}
       </div>
     </div>
   {/if}

@@ -74,7 +74,7 @@
 
   <!-- Notifications Dropdown -->
   {#if showNotifications}
-    <div class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+    <div class="fixed mt-2 w-80 max-w-sm bg-white rounded-lg shadow-lg border border-gray-200 z-50" style="right: 1rem; top: 4rem; max-width: min(20rem, calc(100vw - 2rem));">
       <!-- Header -->
       <div class="flex items-center justify-between p-4 border-b border-gray-200">
         <h3 class="text-lg font-medium text-gray-900">Notifications</h3>
@@ -127,8 +127,10 @@
 
 <!-- Click outside to close -->
 {#if showNotifications}
-  <div 
-    class="fixed inset-0 z-40"
+  <button 
+    class="fixed inset-0 z-40 w-full h-full bg-transparent border-none p-0 cursor-default"
     on:click={() => showNotifications = false}
-  ></div>
+    on:keydown={(e) => e.key === 'Escape' && (showNotifications = false)}
+    aria-label="Close notifications"
+  ></button>
 {/if}
