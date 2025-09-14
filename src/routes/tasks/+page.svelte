@@ -26,9 +26,10 @@
   // Keyboard shortcuts state
   let showKeyboardHelp = false;
 
-  onMount(async () => {
-    await tasksStore.load();
-    await usersStore.load();
+  onMount(() => {
+    // Load data asynchronously
+    tasksStore.load();
+    usersStore.load();
 
     // Set up keyboard shortcut event listeners
     document.addEventListener('keyboard-select-all', handleKeyboardSelectAll);
@@ -227,8 +228,8 @@
     handleBulkDelete();
   }
 
-  function handleKeyboardBulkStatus(event: CustomEvent) {
-    const { status } = event.detail;
+  function handleKeyboardBulkStatus(event: Event) {
+    const { status } = (event as CustomEvent).detail;
     handleBulkStatusUpdate(status);
   }
 
@@ -254,6 +255,7 @@
               on:click={() => showKeyboardHelp = true}
               class="p-2 text-gray-600 hover:text-gray-500 rounded-lg"
               title="Keyboard shortcuts (?)"
+              aria-label="Show keyboard shortcuts help"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -398,6 +400,7 @@
               on:click={() => selectionHelpers.clear()}
               class="text-gray-500 hover:text-gray-700"
               title="Clear selection"
+              aria-label="Clear selection"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -467,84 +470,72 @@
 
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center space-x-3">
-                      <!-- Completion Checkbox -->
-                      <button
-                        on:click={() => toggleTaskCompletion(task)}
-                        class="flex-shrink-0 w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center hover:border-blue-500 transition-colors {task.completed ? 'bg-green-500 border-green-500' : ''}"
-                      >
-                        {#if task.completed}
-                          <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                          </svg>
-                        {/if}
-                      </button>
+                      <!-- Task Title -->
+                      <h3 class="text-lg font-medium text-gray-900 {task.completed ? 'line-through text-gray-500' : ''}">
+                        {task.title}
+                      </h3>
 
-                    <!-- Task Title -->
-                    <h3 class="text-lg font-medium text-gray-900 {task.completed ? 'line-through text-gray-500' : ''}">
-                      {task.title}
-                    </h3>
-
-                    <!-- Status Badge -->
-                    <span class="px-2 py-1 text-xs font-medium rounded-full {getStatusColor(task.status)}">
-                      {task.status.replace('_', ' ')}
-                    </span>
-                  </div>
-
-                  <!-- Task Description -->
-                  {#if task.description}
-                    <p class="mt-2 text-gray-600 {task.completed ? 'line-through' : ''}">{task.description}</p>
-                  {/if}
-
-                  <!-- Task Metadata -->
-                  <div class="mt-3 flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                    <span>Created {formatDate(task.createdAt)}</span>
-                    {#if task.dueDate}
-                      <span class="flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        Due {formatDate(task.dueDate)}
+                      <!-- Status Badge -->
+                      <span class="px-2 py-1 text-xs font-medium rounded-full {getStatusColor(task.status)}">
+                        {task.status.replace('_', ' ')}
                       </span>
-                    {/if}
-                    {#if task.estimationHours}
-                      <span class="flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        {task.estimationHours}h
-                      </span>
-                    {/if}
-                  </div>
-
-                  <!-- Assigned Users -->
-                  {#if task.assignedUsers && task.assignedUsers.length > 0}
-                    <div class="mt-3">
-                      <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-xs text-gray-500 flex items-center gap-1">
-                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 013 0z"/>
-                          </svg>
-                          Assigned to:
-                        </span>
-                        {#each task.assignedUsers as user, index (user.id)}
-                          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {user.firstName} {user.lastName}
-                          </span>
-                        {/each}
-                      </div>
                     </div>
-                  {/if}
+
+                    <!-- Task Description -->
+                    {#if task.description}
+                      <p class="mt-2 text-gray-600 {task.completed ? 'line-through' : ''}">{task.description}</p>
+                    {/if}
+
+                    <!-- Task Metadata -->
+                    <div class="mt-3 flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                      <span>Created {formatDate(task.createdAt)}</span>
+                      {#if task.dueDate}
+                        <span class="flex items-center gap-1">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                          </svg>
+                          Due {formatDate(task.dueDate)}
+                        </span>
+                      {/if}
+                      {#if task.estimationHours}
+                        <span class="flex items-center gap-1">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                          </svg>
+                          {task.estimationHours}h
+                        </span>
+                      {/if}
+                    </div>
+
+                    <!-- Assigned Users -->
+                    {#if task.assignedUsers && task.assignedUsers.length > 0}
+                      <div class="mt-3">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="text-xs text-gray-500 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 013 0z"/>
+                            </svg>
+                            Assigned to:
+                          </span>
+                          {#each task.assignedUsers as user, index (user.id)}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {user.firstName} {user.lastName}
+                            </span>
+                          {/each}
+                        </div>
+                      </div>
+                    {/if}
                   </div>
                 </div>
 
                 <!-- Actions -->
                 <div class="flex items-center space-x-2">
-                  <a href="/tasks/{task.id}/edit" class="text-blue-600 hover:text-blue-500 p-1">
+                  <a href="/tasks/{task.id}/edit" class="text-blue-600 hover:text-blue-500 p-1" aria-label="Edit task">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
                   </a>
-                  <button on:click={() => handleDeleteTask(task.id)} class="text-red-600 hover:text-red-500 p-1">
+                  <button on:click={() => handleDeleteTask(task.id)} class="text-red-600 hover:text-red-500 p-1" aria-label="Delete task">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
