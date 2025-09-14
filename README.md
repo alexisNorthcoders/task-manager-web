@@ -84,13 +84,42 @@ The app includes Progressive Web App capabilities:
 npm run build
 ```
 
-The built application will be in the `build/` directory, ready for deployment to any static hosting service.
+The built application will be in the `build/` directory as a Node.js application with SSR capabilities.
 
 ## Deployment
 
-The app can be deployed to:
-- Vercel (recommended)
-- Netlify
-- Any static hosting service
+This SvelteKit app uses the Node.js adapter and requires a Node.js runtime environment. It can be deployed to:
 
-Make sure to set the `PUBLIC_API_URL` environment variable to point to your production API.
+- **Railway** (recommended for Node.js apps)
+- **Render**
+- **Heroku**
+- **DigitalOcean App Platform**
+- **AWS Elastic Beanstalk**
+- **Google Cloud Run**
+- **Any Node.js hosting service**
+
+### Docker Deployment
+
+The project includes a `Dockerfile` for containerized deployment:
+
+```bash
+# Build the Docker image
+docker build -t task-manager-web .
+
+# Run the container
+docker run -p 3000:3000 -e PUBLIC_API_URL=http://your-api-url task-manager-web
+```
+
+### Environment Variables
+
+Make sure to set the `PUBLIC_API_URL` environment variable to point to your production API:
+
+```bash
+PUBLIC_API_URL=https://your-api-domain.com
+```
+
+### Production Notes
+
+- The app runs on port 3000 by default
+- Ensure your hosting platform supports Node.js 18+
+- The app includes SSR (Server-Side Rendering) capabilities
