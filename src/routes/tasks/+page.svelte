@@ -289,18 +289,10 @@
           </div>
         </div>
         
-        <!-- Page Title and Primary Action -->
-        <div class="flex items-center justify-between py-4">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900">Tasks</h1>
-            <p class="text-gray-600 mt-1">Manage and organize your tasks</p>
-          </div>
-          <a href="/tasks/new" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md">
-            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-            </svg>
-            New Task
-          </a>
+        <!-- Page Title -->
+        <div class="py-4">
+          <h1 class="text-3xl font-bold text-gray-900">Tasks</h1>
+          <p class="text-gray-600 mt-1">Manage and organize your tasks</p>
         </div>
       </div>
     </header>
@@ -631,6 +623,22 @@
       {/if}
     </main>
   </div>
+
+  <!-- Floating Action Button -->
+  <a 
+    href="/tasks/new" 
+    class="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-200 z-50 group"
+    title="Create new task"
+    aria-label="Create new task"
+  >
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+    </svg>
+    <!-- Tooltip -->
+    <div class="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+      New Task
+    </div>
+  </a>
 
   <!-- Keyboard Shortcuts Help Modal -->
   <KeyboardShortcutsHelp bind:show={showKeyboardHelp} />
