@@ -25,6 +25,9 @@
 
   // Keyboard shortcuts state
   let showKeyboardHelp = false;
+  
+  // Sort dropdown state
+  let showSortDropdown = false;
 
   onMount(() => {
     // Load data asynchronously
@@ -37,11 +40,20 @@
     document.addEventListener('keyboard-bulk-status', handleKeyboardBulkStatus);
     document.addEventListener('keyboard-show-help', handleKeyboardShowHelp);
 
+    // Close dropdown when clicking outside
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showSortDropdown && !(event.target as Element).closest('[data-sort-dropdown]')) {
+        showSortDropdown = false;
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+
     return () => {
       document.removeEventListener('keyboard-select-all', handleKeyboardSelectAll);
       document.removeEventListener('keyboard-bulk-delete', handleKeyboardBulkDelete);
       document.removeEventListener('keyboard-bulk-status', handleKeyboardBulkStatus);
       document.removeEventListener('keyboard-show-help', handleKeyboardShowHelp);
+      document.removeEventListener('click', handleClickOutside);
     };
   });
 
@@ -247,13 +259,26 @@
     <!-- Header -->
     <header class="bg-white shadow-sm border-b">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center py-4">
-          <h1 class="text-2xl font-bold text-gray-900">Tasks</h1>
-          <div class="flex items-center space-x-4">
+        <!-- Top Navigation Bar -->
+        <div class="flex items-center justify-between py-3 border-b border-gray-100">
+          <div class="flex items-center space-x-6">
+            <a href="/dashboard" class="flex items-center text-gray-600 hover:text-gray-900 transition-colors">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+              </svg>
+              <span class="font-medium">Back</span>
+            </a>
+            <div class="h-6 w-px bg-gray-300"></div>
+            <a href="/templates" class="text-gray-600 hover:text-gray-900 font-medium transition-colors">
+              Templates
+            </a>
+          </div>
+          
+          <div class="flex items-center space-x-3">
             <NotificationCenter />
             <button
               on:click={() => showKeyboardHelp = true}
-              class="p-2 text-gray-600 hover:text-gray-500 rounded-lg"
+              class="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
               title="Keyboard shortcuts (?)"
               aria-label="Show keyboard shortcuts help"
             >
@@ -261,16 +286,21 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
             </button>
-            <a href="/templates" class="text-blue-600 hover:text-blue-500 font-medium">
-              Templates
-            </a>
-            <a href="/tasks/new" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-              New Task
-            </a>
-            <a href="/dashboard" class="text-gray-600 hover:text-gray-500">
-              ← Dashboard
-            </a>
           </div>
+        </div>
+        
+        <!-- Page Title and Primary Action -->
+        <div class="flex items-center justify-between py-4">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">Tasks</h1>
+            <p class="text-gray-600 mt-1">Manage and organize your tasks</p>
+          </div>
+          <a href="/tasks/new" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            New Task
+          </a>
         </div>
       </div>
     </header>
@@ -304,19 +334,55 @@
 
           <!-- Sort -->
           <div class="flex gap-2">
-            <select
-              bind:value={sortBy}
-              class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="created">Created Date</option>
-              <option value="title">Title</option>
-              <option value="status">Status</option>
-              <option value="dueDate">Due Date</option>
-            </select>
+            <div class="relative" data-sort-dropdown>
+              <button
+                on:click={() => showSortDropdown = !showSortDropdown}
+                class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 min-w-[120px]"
+              >
+                <span class="text-sm">
+                  {sortBy === 'created' ? 'Created' : 
+                   sortBy === 'title' ? 'Title' : 
+                   sortBy === 'status' ? 'Status' : 
+                   sortBy === 'dueDate' ? 'Due Date' : 'Created'}
+                </span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              
+              {#if showSortDropdown}
+                <div class="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                  <button
+                    on:click={() => { sortBy = 'created'; showSortDropdown = false; }}
+                    class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg {sortBy === 'created' ? 'bg-blue-50 text-blue-700' : ''}"
+                  >
+                    Created
+                  </button>
+                  <button
+                    on:click={() => { sortBy = 'title'; showSortDropdown = false; }}
+                    class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 {sortBy === 'title' ? 'bg-blue-50 text-blue-700' : ''}"
+                  >
+                    Title
+                  </button>
+                  <button
+                    on:click={() => { sortBy = 'status'; showSortDropdown = false; }}
+                    class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 {sortBy === 'status' ? 'bg-blue-50 text-blue-700' : ''}"
+                  >
+                    Status
+                  </button>
+                  <button
+                    on:click={() => { sortBy = 'dueDate'; showSortDropdown = false; }}
+                    class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 last:rounded-b-lg {sortBy === 'dueDate' ? 'bg-blue-50 text-blue-700' : ''}"
+                  >
+                    Due Date
+                  </button>
+                </div>
+              {/if}
+            </div>
             
             <button
               on:click={() => sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'}
-              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0 h-[38px] flex items-center justify-center"
               title="Sort order"
             >
               {sortOrder === 'asc' ? '↑' : '↓'}
@@ -355,50 +421,17 @@
       <!-- Bulk Actions Toolbar -->
       {#if showBulkActions}
         <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4">
-              <span class="font-medium text-blue-900">
+          <!-- Header with selection count and close button -->
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 bg-blue-600 rounded-full"></div>
+              <span class="font-semibold text-blue-900">
                 {$selectedTaskIds.size} task{$selectedTaskIds.size !== 1 ? 's' : ''} selected
               </span>
-              
-              <div class="flex items-center gap-2">
-                <!-- Bulk Status Updates -->
-                <button
-                  on:click={() => handleBulkStatusUpdate('TODO')}
-                  disabled={bulkOperationLoading}
-                  class="px-3 py-1 text-sm bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 disabled:opacity-50"
-                >
-                  Mark as To Do
-                </button>
-                <button
-                  on:click={() => handleBulkStatusUpdate('IN_PROGRESS')}
-                  disabled={bulkOperationLoading}
-                  class="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 disabled:opacity-50"
-                >
-                  Mark In Progress
-                </button>
-                <button
-                  on:click={() => handleBulkStatusUpdate('DONE')}
-                  disabled={bulkOperationLoading}
-                  class="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-md hover:bg-green-200 disabled:opacity-50"
-                >
-                  Mark Complete
-                </button>
-
-                <!-- Bulk Delete -->
-                <button
-                  on:click={handleBulkDelete}
-                  disabled={bulkOperationLoading}
-                  class="px-3 py-1 text-sm bg-red-100 text-red-800 rounded-md hover:bg-red-200 disabled:opacity-50"
-                >
-                  Delete
-                </button>
-              </div>
             </div>
-
             <button
               on:click={() => selectionHelpers.clear()}
-              class="text-gray-500 hover:text-gray-700"
+              class="p-1 text-gray-500 hover:text-gray-700 rounded"
               title="Clear selection"
               aria-label="Clear selection"
             >
@@ -408,16 +441,66 @@
             </button>
           </div>
 
+          <!-- Mobile-first action buttons -->
+          <div class="space-y-3">
+            <!-- Mark as section -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 mb-2">Mark as:</h3>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  on:click={() => handleBulkStatusUpdate('TODO')}
+                  disabled={bulkOperationLoading}
+                  class="px-4 py-2 text-sm font-medium bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  To Do
+                </button>
+                <button
+                  on:click={() => handleBulkStatusUpdate('IN_PROGRESS')}
+                  disabled={bulkOperationLoading}
+                  class="px-4 py-2 text-sm font-medium bg-white text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  In Progress
+                </button>
+                <button
+                  on:click={() => handleBulkStatusUpdate('DONE')}
+                  disabled={bulkOperationLoading}
+                  class="px-4 py-2 text-sm font-medium bg-white text-green-700 border border-green-300 rounded-lg hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Complete
+                </button>
+              </div>
+            </div>
+
+            <!-- Delete action -->
+            <div class="pt-2 border-t border-blue-200">
+              <button
+                on:click={handleBulkDelete}
+                disabled={bulkOperationLoading}
+                class="px-4 py-2 text-sm font-medium bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Delete Selected
+              </button>
+            </div>
+          </div>
+
           {#if bulkOperationLoading}
-            <div class="mt-3 flex items-center gap-2 text-blue-700">
+            <div class="mt-4 flex items-center gap-2 text-blue-700">
               <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              Processing...
+              <span class="text-sm">Processing...</span>
             </div>
           {/if}
 
           {#if bulkOperationError}
-            <div class="mt-3 text-red-700 text-sm">
-              {bulkOperationError}
+            <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="text-red-700 text-sm">{bulkOperationError}</span>
+              </div>
             </div>
           {/if}
         </div>
