@@ -13,17 +13,24 @@
   <meta name="description" content="Mobile-first task management application" />
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+<div class="min-h-screen flex items-center justify-center px-4">
   <div class="max-w-md w-full">
-    <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">Task Manager</h1>
+    <div class="text-center mb-8">
+      <div class="flex justify-center mb-6">
+        <div class="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center">
+          <span class="text-white font-bold text-3xl">TM</span>
+        </div>
+      </div>
+      <h1 class="text-4xl font-bold text-gray-900">Task Manager</h1>
+      <p class="text-lg text-gray-600 mt-2">Your productivity companion</p>
+    </div>
     
     {#if mounted}
       <div class="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
-        <p class="text-lg text-gray-600 mb-4 text-center">Welcome to your mobile-first task management app!</p>
-        <p class="text-green-600 font-medium text-center mb-6">SvelteKit + TailwindCSS is running successfully.</p>
+        <p class="text-lg text-gray-600 mb-4 text-center">Welcome to your task management app!</p>
         <div class="space-y-3">
-          <a href="/auth/login" class="block w-full bg-blue-600 text-white px-4 py-2 rounded-lg text-center font-medium hover:bg-blue-700 transition-colors">Get Started</a>
-          <a href="/auth/register" class="block w-full bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-center font-medium hover:bg-gray-300 transition-colors">Create Account</a>
+          <a href="/auth/login" class="block w-full btn-primary text-center">Get Started</a>
+          <a href="/auth/register" class="block w-full btn-secondary text-center">Create Account</a>
         </div>
       </div>
     {:else}

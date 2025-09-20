@@ -3,6 +3,8 @@
   import { onMount } from 'svelte';
   import { tasksStore } from '$lib/stores/tasks';
   import ProtectedRoute from '$lib/components/ProtectedRoute.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
+  import PageContainer from '$lib/components/PageContainer.svelte';
   import { getTaskTemplates } from '$lib/api/tasks';
   import type { CreateTaskInput, TaskTemplate } from '$lib/types';
 
@@ -118,7 +120,7 @@
   }
 
   function handleCancel() {
-    goto('/tasks');
+    goto('/dashboard');
   }
 </script>
 
@@ -127,21 +129,13 @@
 </svelte:head>
 
 <ProtectedRoute>
-  <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center py-4">
-          <h1 class="text-2xl font-bold text-gray-900">Create New Task</h1>
-          <a href="/tasks" class="text-gray-600 hover:text-gray-500">
-            ← Back to Tasks
-          </a>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="max-w-3xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+  <PageHeader 
+    title="Create New Task" 
+    subtitle="Add a new task to your list"
+    showBackButton={false}
+  />
+  
+  <PageContainer maxWidth="max-w-3xl">
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <form on:submit|preventDefault={handleSubmit} class="space-y-6">
           <!-- Template Selection -->
@@ -264,7 +258,7 @@
             <button
               type="button"
               on:click={handleCancel}
-              class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+              class="btn-secondary"
               disabled={isLoading}
             >
               Cancel
@@ -272,13 +266,12 @@
             <button
               type="submit"
               disabled={isLoading || !isFormValid}
-              class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="btn-primary"
             >
               {isLoading ? 'Creating...' : 'Create Task'}
             </button>
           </div>
         </form>
       </div>
-    </main>
-  </div>
+  </PageContainer>
 </ProtectedRoute>
