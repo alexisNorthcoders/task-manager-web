@@ -5,7 +5,9 @@ export interface User {
   firstName: string;
   lastName: string;
   role: 'USER' | 'ADMIN';
+  avatarUrl?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Task {
@@ -59,6 +61,20 @@ export interface RegisterInput {
 export interface LoginInput {
   username: string;
   password: string;
+}
+
+export interface UpdatePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface UpdateAvatarInput {
+  avatarUrl: string;
+}
+
+export interface UploadAvatarResponse {
+  avatarUrl: string;
+  message: string;
 }
 
 // Phase 1 new types
