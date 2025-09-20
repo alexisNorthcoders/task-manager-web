@@ -1,10 +1,13 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { page } from '$app/stores';
+  import { searchQuery } from '$lib/stores/search';
   
   const dispatch = createEventDispatcher();
   
   export let isOpen = false;
+  
+  // Use the store for search query
   
   function closeMenu() {
     isOpen = false;
@@ -51,6 +54,23 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
+    </div>
+
+    <!-- Search -->
+    <div class="px-6 py-4 border-b border-gray-200">
+      <div class="relative">
+        <input
+          type="text"
+          placeholder="Search tasks..."
+          bind:value={$searchQuery}
+          class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+        />
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+      </div>
     </div>
 
     <!-- Navigation -->

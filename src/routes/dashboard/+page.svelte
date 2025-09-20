@@ -40,7 +40,6 @@
   <PageContainer>
       <!-- Kanban Board -->
       <div class="mb-8">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Task Management</h2>
         <KanbanBoard />
       </div>
   </PageContainer>

@@ -2,12 +2,12 @@
   import { onMount } from 'svelte';
   import { tasksStore } from '$lib/stores/tasks';
   import { selectedTaskIds, selectionHelpers } from '$lib/stores/selection';
+  import { searchQuery } from '$lib/stores/search';
   import { bulkUpdateTasks, bulkDeleteTasks } from '$lib/api/tasks';
   import Task from './Task.svelte';
   import type { Task as TaskType, BulkUpdateTaskInput } from '$lib/types';
-
+  
   let filteredTasks: TaskType[] = [];
-  let searchQuery = '';
   let showBulkActions = false;
   let bulkOperationLoading = false;
   let bulkOperationError = '';
@@ -15,20 +15,24 @@
   // Reactive bulk actions visibility
   $: showBulkActions = $selectedTaskIds.size > 0;
 
-  onMount(() => {
-    tasksStore.load();
+  onMount(async () => {
+    await tasksStore.load();
+    // Apply filters after loading tasks
+    applyFilters();
   });
 
   function applyFilters() {
     let filtered = [...$tasksStore.tasks];
 
     // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(task => 
-        task.title.toLowerCase().includes(query) ||
-        (task.description && task.description.toLowerCase().includes(query))
-      );
+    if ($searchQuery && $searchQuery.trim()) {
+      const query = $searchQuery.toLowerCase();
+      
+      filtered = filtered.filter(task => {
+        const titleMatch = task.title && task.title.toLowerCase().includes(query);
+        const descMatch = task.description && task.description.toLowerCase().includes(query);
+        return titleMatch || descMatch;
+      });
     }
 
     filteredTasks = filtered;
@@ -57,9 +61,10 @@
   $: todoTasks = filteredTasks.filter(task => task.status === 'TODO');
   $: inProgressTasks = filteredTasks.filter(task => task.status === 'IN_PROGRESS');
   $: completedTasks = filteredTasks.filter(task => task.status === 'COMPLETED' || task.completed);
+  
 
   // Reactive updates when filters change or tasks change
-  $: if ($tasksStore.tasks || searchQuery !== undefined) {
+  $: {
     applyFilters();
   }
 
@@ -112,21 +117,23 @@
 </script>
 
 <div class="space-y-6 {showBulkActions ? 'pb-20 sm:pb-16' : ''}">
-  <!-- Search and Selection -->
-  <div class="space-y-4">
-    <div class="flex flex-col sm:flex-row gap-4">
-      <div class="flex-1">
-        <input
-          type="text"
-          placeholder="Search tasks..."
-          bind:value={searchQuery}
-          class="input"
-        />
+  <!-- Search Indicator -->
+  {#if $searchQuery && $searchQuery.trim()}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <span class="text-sm text-blue-800">Searching for: <strong>"{$searchQuery}"</strong></span>
+        <button 
+          on:click={() => searchQuery.set('')} 
+          class="ml-auto text-blue-600 hover:text-blue-800 text-sm underline"
+        >
+          Clear
+        </button>
       </div>
-      
     </div>
-  </div>
-
+  {/if}
 
   <!-- Error Message -->
   {#if $tasksStore.error}
@@ -151,7 +158,7 @@
       {#if $tasksStore.tasks.length === 0}
         <a href="/tasks/new" class="mt-4 inline-block btn-primary">Create your first task</a>
       {:else}
-        <button on:click={() => { searchQuery = ''; }} class="mt-4 text-blue-600 hover:text-blue-500 underline">
+        <button on:click={() => { searchQuery.set(''); }} class="mt-4 text-blue-600 hover:text-blue-500 underline">
           Clear search
         </button>
       {/if}
