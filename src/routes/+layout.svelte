@@ -68,17 +68,23 @@
             </button>
             
             <nav class="hidden md:flex space-x-6">
-              <a 
-                href="/dashboard" 
+              <a
+                href="/dashboard"
                 class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors {$page.url.pathname === '/dashboard' ? 'bg-gray-100 text-gray-900' : ''}"
               >
                 Dashboard
               </a>
-              <a 
-                href="/templates" 
+              <a
+                href="/templates"
                 class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors {$page.url.pathname.startsWith('/templates') ? 'bg-gray-100 text-gray-900' : ''}"
               >
                 Templates
+              </a>
+              <a
+                href="/settings"
+                class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors {$page.url.pathname.startsWith('/settings') ? 'bg-gray-100 text-gray-900' : ''}"
+              >
+                Settings
               </a>
             </nav>
           </div>
@@ -87,9 +93,28 @@
           <div class="flex items-center space-x-4">
             <!-- Notifications -->
             <NotificationCenter />
-            <span class="text-sm text-gray-600">
-              Welcome, {$auth.user?.firstName || 'User'}!
-            </span>
+
+            <!-- User Avatar and Info -->
+            <div class="flex items-center space-x-3">
+              {#if $auth.user?.avatarUrl}
+                <img
+                  src={$auth.user.avatarUrl}
+                  alt="User avatar"
+                  class="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+                />
+              {:else}
+                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center border-2 border-gray-200">
+                  <span class="text-white font-semibold text-xs">
+                    {($auth.user?.firstName?.charAt(0) || '') + ($auth.user?.lastName?.charAt(0) || '')}
+                  </span>
+                </div>
+              {/if}
+              <div class="hidden sm:block">
+                <p class="text-sm font-medium text-gray-900">{$auth.user?.firstName || 'User'}</p>
+                <p class="text-xs text-gray-500">{$auth.user?.role || 'USER'}</p>
+              </div>
+            </div>
+
             <button
               on:click={handleLogout}
               class="text-sm text-red-600 hover:text-red-500 px-3 py-2 rounded-md hover:bg-red-50 transition-colors"
