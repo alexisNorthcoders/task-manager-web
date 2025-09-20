@@ -39,6 +39,7 @@ export const GET_TASK = `
         lastName
         email
         role
+        avatarUrl
       }
     }
   }
@@ -90,7 +91,9 @@ export const GET_USERS = `
       firstName
       lastName
       role
+      avatarUrl
       createdAt
+      updatedAt
     }
   }
 `;
@@ -107,6 +110,7 @@ export const ASSIGN_USERS_TO_TASK = `
         lastName
         email
         role
+        avatarUrl
       }
     }
   }
@@ -124,6 +128,7 @@ export const UNASSIGN_USERS_FROM_TASK = `
         lastName
         email
         role
+        avatarUrl
       }
     }
   }
@@ -239,7 +244,56 @@ export const CREATE_TASK_FROM_TEMPLATE = `
         username
         firstName
         lastName
+        avatarUrl
       }
+    }
+  }
+`;
+
+// User Settings Mutations
+export const UPDATE_USER_PASSWORD = `
+  mutation UpdateUserPassword($currentPassword: String!, $newPassword: String!) {
+    updateUserPassword(currentPassword: $currentPassword, newPassword: $newPassword) {
+      id
+      username
+      email
+      firstName
+      lastName
+      avatarUrl
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_USER_AVATAR = `
+  mutation UpdateUserAvatar($avatarUrl: String!) {
+    updateUserAvatar(avatarUrl: $avatarUrl) {
+      id
+      username
+      email
+      firstName
+      lastName
+      avatarUrl
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+// Current User Query
+export const GET_CURRENT_USER = `
+  query GetCurrentUser {
+    currentUser {
+      id
+      username
+      email
+      firstName
+      lastName
+      avatarUrl
+      role
+      createdAt
+      updatedAt
     }
   }
 `;

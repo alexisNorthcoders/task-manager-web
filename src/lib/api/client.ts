@@ -93,12 +93,21 @@ class ApiClient {
       body: formData,
       headers: {
         'Authorization': this.token ? `Bearer ${this.token}` : ''
+        // Note: Don't set Content-Type header for FormData - browser will set it with boundary
       }
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Upload failed');
+      let errorMessage = 'Upload failed';
+
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+      } catch {
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      }
+
+      throw new Error(errorMessage);
     }
 
     return response.json();

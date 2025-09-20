@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import type { User, AuthResponse } from '../types';
 import { apiClient } from '../api/client';
+import { getCurrentUser } from '../api/users';
 
 interface AuthState {
   user: User | null;
@@ -59,24 +60,86 @@ function createAuthStore() {
       }));
       apiClient.clearAuthToken();
     },
-    
+
     setLoading: (isLoading: boolean) => {
       update(state => ({
         ...state,
         isLoading
       }));
     },
+
+    refreshUser: async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          update(state => ({
+            ...state,
+            user,
+            isAuthenticated: true,
+            isLoading: false
+          }));
+          return user;
+        } else {
+          // If we can't get user data, clear auth
+          update(state => ({
+            ...state,
+            user: null,
+            isAuthenticated: false,
+            isLoading: false
+          }));
+          return null;
+        }
+      } catch (error) {
+        console.error('Failed to refresh user data:', error);
+        update(state => ({
+          ...state,
+          user: null,
+          isAuthenticated: false,
+          isLoading: false
+        }));
+        return null;
+      }
+    },
+
+    updateUserAvatar: (avatarUrl: string) => {
+      update(state => ({
+        ...state,
+        user: state.user ? { ...state.user, avatarUrl } : null
+      }));
+    },
     
-    initialize: () => {
+    initialize: async () => {
       if (browser) {
         const token = apiClient.getToken();
         if (token) {
-          // TODO: Validate token with server and get user info
-          update(state => ({
-            ...state,
-            isAuthenticated: !!token,
-            isLoading: false
-          }));
+          // Try to get user data from the server
+          try {
+            const user = await getCurrentUser();
+            if (user) {
+              update(state => ({
+                ...state,
+                user,
+                isAuthenticated: true,
+                isLoading: false
+              }));
+            } else {
+              // Token is invalid or expired
+              update(state => ({
+                ...state,
+                isAuthenticated: false,
+                isLoading: false
+              }));
+              apiClient.clearAuthToken();
+            }
+          } catch (error) {
+            console.error('Failed to initialize auth:', error);
+            update(state => ({
+              ...state,
+              isAuthenticated: false,
+              isLoading: false
+            }));
+            apiClient.clearAuthToken();
+          }
         } else {
           update(state => ({
             ...state,
