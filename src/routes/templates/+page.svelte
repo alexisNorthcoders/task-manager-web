@@ -62,8 +62,8 @@
       createFromTemplateLoading = true;
       await createTaskFromTemplate(selectedTemplate.id, selectedUserIds.length > 0 ? selectedUserIds : undefined);
       closeCreateFromTemplate();
-      // Navigate to tasks page to see the new task
-      window.location.href = '/tasks';
+      // Navigate to dashboard page to see the new task
+      window.location.href = '/dashboard';
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to create task from template';
     } finally {
