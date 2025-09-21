@@ -11,6 +11,15 @@
   let bulkOperationLoading = false;
   let bulkOperationError = '';
 
+  onMount(async () => {
+    // Load tasks when component mounts
+    try {
+      await tasksStore.load();
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+    }
+  });
+
   // Reactive bulk actions visibility
   $: showBulkActions = $selectedTaskIds.size > 0;
 

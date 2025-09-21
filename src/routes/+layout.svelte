@@ -10,19 +10,9 @@
 
   onMount(() => {
     auth.initialize();
-    
-    // Initialize WebSocket connection when user is authenticated
-    const unsubscribe = auth.subscribe((authState) => {
-      if (authState.isAuthenticated) {
-        console.log('User authenticated, connecting WebSocket');
-        webSocketService.connect();
-      } else {
-        console.log('User not authenticated, disconnecting WebSocket');
-        webSocketService.disconnect();
-      }
-    });
 
-    return unsubscribe;
+    // WebSocket connection is now handled automatically in the auth store
+    // after successful authentication initialization
   });
 
   onDestroy(() => {

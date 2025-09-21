@@ -59,6 +59,11 @@ function createAuthStore() {
         isLoading: false
       }));
       apiClient.clearAuthToken();
+
+      // Disconnect WebSocket when user logs out
+      import('../services/websocket').then(({ webSocketService }) => {
+        webSocketService.disconnect();
+      });
     },
 
     setLoading: (isLoading: boolean) => {
@@ -78,6 +83,12 @@ function createAuthStore() {
             isAuthenticated: true,
             isLoading: false
           }));
+
+          // Ensure WebSocket is connected when user data is refreshed
+          import('../services/websocket').then(({ webSocketService }) => {
+            webSocketService.connect();
+          });
+
           return user;
         } else {
           // If we can't get user data, clear auth
@@ -122,8 +133,13 @@ function createAuthStore() {
                 isAuthenticated: true,
                 isLoading: false
               }));
+              // Import and trigger WebSocket connection after successful auth
+              import('../services/websocket').then(({ webSocketService }) => {
+                webSocketService.connect();
+              });
             } else {
               // Token is invalid or expired
+              console.warn('Token is invalid or expired, clearing auth');
               update(state => ({
                 ...state,
                 isAuthenticated: false,
@@ -133,12 +149,28 @@ function createAuthStore() {
             }
           } catch (error) {
             console.error('Failed to initialize auth:', error);
+            // Check if this is an authentication error (400, 401, or auth-related messages)
+            const isAuthError = error instanceof Error && (
+              error.message.includes('401') ||
+              error.message.includes('400') ||
+              error.message.includes('Authentication error') ||
+              error.message.includes('Unauthorized') ||
+              error.message.includes('JWT') ||
+              error.message.includes('Token')
+            );
+            
+            if (isAuthError) {
+              console.warn('Authentication failed, clearing token:', error.message);
+              apiClient.clearAuthToken();
+            } else {
+              console.warn('Network or server error, keeping token for retry:', error.message);
+            }
+            
             update(state => ({
               ...state,
               isAuthenticated: false,
               isLoading: false
             }));
-            apiClient.clearAuthToken();
           }
         } else {
           update(state => ({
