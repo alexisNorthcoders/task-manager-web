@@ -3,6 +3,7 @@
   import { getTaskAttachments, deleteTaskAttachment, uploadAttachment } from '$lib/api/attachments';
   import { auth } from '$lib/stores/auth';
   import type { TaskAttachment } from '$lib/types';
+  import { PUBLIC_API_URL } from '$env/static/public';
 
   export let taskId: string;
   export let onAttachmentAdded: (attachment: TaskAttachment) => void = () => {};
@@ -244,7 +245,7 @@
           {#if attachment.isImage}
             <div class="mb-3">
               <img
-                src={`${import.meta.env.PUBLIC_API_URL || 'http://localhost:8080'}/api/attachments/download/${attachment.id}`}
+                src={`${PUBLIC_API_URL || 'http://localhost:8080'}/api/attachments/download/${attachment.id}`}
                 alt={attachment.originalFilename}
                 class="w-full h-32 object-cover rounded-lg border border-gray-200"
                 loading="lazy"
@@ -267,7 +268,7 @@
           <!-- Download Link -->
           <div class="mt-3">
             <a
-              href={`${import.meta.env.PUBLIC_API_URL || 'http://localhost:8080'}/api/attachments/download/${attachment.id}`}
+              href={`${PUBLIC_API_URL || 'http://localhost:8080'}/api/attachments/download/${attachment.id}`}
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
