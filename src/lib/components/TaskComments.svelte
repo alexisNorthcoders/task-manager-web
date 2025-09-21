@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { createTaskComment, updateTaskComment, deleteTaskComment } from '$lib/api/comments';
   import { auth } from '$lib/stores/auth';
+  import ConfirmationDialog from './ConfirmationDialog.svelte';
   import type { TaskComment, CreateTaskCommentInput, UpdateTaskCommentInput } from '$lib/types';
 
   export let taskId: string;
@@ -17,6 +18,11 @@
   let replyContent = '';
   let isSubmitting = false;
   let error = '';
+  
+  // Confirmation dialog state
+  let showDeleteConfirm = false;
+  let commentToDelete: string | null = null;
+  let deleteConfirmLoading = false;
 
   $: currentUser = $auth.user;
 
@@ -86,21 +92,33 @@
     }
   }
 
-  async function handleDeleteComment(commentId: string) {
-    if (!confirm('Are you sure you want to delete this comment?')) return;
+  function handleDeleteComment(commentId: string) {
+    commentToDelete = commentId;
+    showDeleteConfirm = true;
+  }
 
-    isSubmitting = true;
+  async function confirmDeleteComment() {
+    if (!commentToDelete) return;
+    
+    deleteConfirmLoading = true;
     error = '';
 
     try {
-      await deleteTaskComment(commentId);
-      comments = comments.filter(c => c.id !== commentId);
-      onCommentDeleted(commentId);
+      await deleteTaskComment(commentToDelete);
+      comments = comments.filter(c => c.id !== commentToDelete);
+      onCommentDeleted(commentToDelete);
+      showDeleteConfirm = false;
+      commentToDelete = null;
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to delete comment';
     } finally {
-      isSubmitting = false;
+      deleteConfirmLoading = false;
     }
+  }
+
+  function cancelDeleteComment() {
+    showDeleteConfirm = false;
+    commentToDelete = null;
   }
 
   async function handleSubmitReply() {
@@ -342,4 +360,17 @@
       <p>No comments yet. Be the first to comment!</p>
     </div>
   {/if}
+
+  <!-- Confirmation Dialog -->
+  <ConfirmationDialog
+    bind:show={showDeleteConfirm}
+    title="Delete Comment"
+    message="Are you sure you want to delete this comment? This action cannot be undone."
+    confirmText="Delete"
+    cancelText="Cancel"
+    variant="danger"
+    bind:isLoading={deleteConfirmLoading}
+    on:confirm={confirmDeleteComment}
+    on:cancel={cancelDeleteComment}
+  />
 </div>

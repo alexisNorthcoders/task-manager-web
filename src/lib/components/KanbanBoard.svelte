@@ -5,11 +5,18 @@
   import { searchQuery } from '$lib/stores/search';
   import { bulkUpdateTasks, bulkDeleteTasks } from '$lib/api/tasks';
   import Task from './Task.svelte';
+  import ConfirmationDialog from './ConfirmationDialog.svelte';
   import type { Task as TaskType, BulkUpdateTaskInput } from '$lib/types';
   
   let showBulkActions = false;
   let bulkOperationLoading = false;
   let bulkOperationError = '';
+  
+  // Confirmation dialog states
+  let showDeleteConfirm = false;
+  let showBulkDeleteConfirm = false;
+  let taskToDelete: string | null = null;
+  let deleteConfirmLoading = false;
 
   onMount(async () => {
     // Load tasks when component mounts
@@ -49,16 +56,31 @@
     }
   }
 
-  async function handleDeleteTask(taskId: string) {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+  function handleDeleteTask(taskId: string) {
+    taskToDelete = taskId;
+    showDeleteConfirm = true;
+  }
 
+  async function confirmDeleteTask() {
+    if (!taskToDelete) return;
+    
+    deleteConfirmLoading = true;
     try {
-      await tasksStore.delete(taskId);
+      await tasksStore.delete(taskToDelete);
+      showDeleteConfirm = false;
+      taskToDelete = null;
     } catch (err: any) {
       console.error('Failed to delete task:', err);
       // Show user-friendly error message for any unexpected errors
       alert('Failed to delete task. Please try again.');
+    } finally {
+      deleteConfirmLoading = false;
     }
+  }
+
+  function cancelDeleteTask() {
+    showDeleteConfirm = false;
+    taskToDelete = null;
   }
 
 
@@ -68,9 +90,11 @@
   $: completedTasks = filteredTasks.filter(task => task.status === 'COMPLETED' || task.completed);
 
   // Bulk operations
-  async function handleBulkDelete() {
-    if (!confirm(`Are you sure you want to delete ${$selectedTaskIds.size} selected tasks?`)) return;
-    
+  function handleBulkDelete() {
+    showBulkDeleteConfirm = true;
+  }
+
+  async function confirmBulkDelete() {
     bulkOperationLoading = true;
     bulkOperationError = '';
 
@@ -81,6 +105,7 @@
       if (result.success) {
         selectionHelpers.clear();
         await tasksStore.load();
+        showBulkDeleteConfirm = false;
       } else {
         bulkOperationError = `Failed to delete some tasks: ${result.errors.join(', ')}`;
       }
@@ -89,6 +114,10 @@
     } finally {
       bulkOperationLoading = false;
     }
+  }
+
+  function cancelBulkDelete() {
+    showBulkDeleteConfirm = false;
   }
 
   async function handleBulkStatusUpdate(status: 'TODO' | 'IN_PROGRESS' | 'DONE') {
@@ -384,5 +413,30 @@
       </div>
     </div>
   {/if}
+
+  <!-- Confirmation Dialogs -->
+  <ConfirmationDialog
+    bind:show={showDeleteConfirm}
+    title="Delete Task"
+    message="Are you sure you want to delete this task? This action cannot be undone."
+    confirmText="Delete"
+    cancelText="Cancel"
+    variant="danger"
+    bind:isLoading={deleteConfirmLoading}
+    on:confirm={confirmDeleteTask}
+    on:cancel={cancelDeleteTask}
+  />
+
+  <ConfirmationDialog
+    bind:show={showBulkDeleteConfirm}
+    title="Delete Selected Tasks"
+    message="Are you sure you want to delete {$selectedTaskIds.size} selected task{$selectedTaskIds.size !== 1 ? 's' : ''}? This action cannot be undone."
+    confirmText="Delete All"
+    cancelText="Cancel"
+    variant="danger"
+    bind:isLoading={bulkOperationLoading}
+    on:confirm={confirmBulkDelete}
+    on:cancel={cancelBulkDelete}
+  />
 </div>
 

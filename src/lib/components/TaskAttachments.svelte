@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { getTaskAttachments, deleteTaskAttachment, uploadAttachment } from '$lib/api/attachments';
   import { auth } from '$lib/stores/auth';
+  import ConfirmationDialog from './ConfirmationDialog.svelte';
   import type { TaskAttachment } from '$lib/types';
   import { PUBLIC_API_URL } from '$env/static/public';
 
@@ -17,6 +18,11 @@
   let showUploadForm = false;
   let selectedFile: File | null = null;
   let description = '';
+  
+  // Confirmation dialog state
+  let showDeleteConfirm = false;
+  let attachmentToDelete: string | null = null;
+  let deleteConfirmLoading = false;
 
   $: currentUser = $auth.user;
 
@@ -71,16 +77,31 @@
     uploadError = '';
   }
 
-  async function handleDelete(attachmentId: string) {
-    if (!confirm('Are you sure you want to delete this attachment?')) return;
+  function handleDelete(attachmentId: string) {
+    attachmentToDelete = attachmentId;
+    showDeleteConfirm = true;
+  }
 
+  async function confirmDeleteAttachment() {
+    if (!attachmentToDelete) return;
+    
+    deleteConfirmLoading = true;
     try {
-      await deleteTaskAttachment(attachmentId);
-      attachments = attachments.filter(a => a.id !== attachmentId);
-      onAttachmentDeleted(attachmentId);
+      await deleteTaskAttachment(attachmentToDelete);
+      attachments = attachments.filter(a => a.id !== attachmentToDelete);
+      onAttachmentDeleted(attachmentToDelete);
+      showDeleteConfirm = false;
+      attachmentToDelete = null;
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to delete attachment';
+    } finally {
+      deleteConfirmLoading = false;
     }
+  }
+
+  function cancelDeleteAttachment() {
+    showDeleteConfirm = false;
+    attachmentToDelete = null;
   }
 
   function canDeleteAttachment(attachment: TaskAttachment): boolean {
@@ -226,6 +247,7 @@
                 on:click={() => handleDelete(attachment.id)}
                 class="flex-shrink-0 text-red-600 hover:text-red-800"
                 title="Delete attachment"
+                aria-label="Delete attachment"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -283,4 +305,17 @@
       {/each}
     </div>
   {/if}
+
+  <!-- Confirmation Dialog -->
+  <ConfirmationDialog
+    bind:show={showDeleteConfirm}
+    title="Delete Attachment"
+    message="Are you sure you want to delete this attachment? This action cannot be undone."
+    confirmText="Delete"
+    cancelText="Cancel"
+    variant="danger"
+    bind:isLoading={deleteConfirmLoading}
+    on:confirm={confirmDeleteAttachment}
+    on:cancel={cancelDeleteAttachment}
+  />
 </div>
