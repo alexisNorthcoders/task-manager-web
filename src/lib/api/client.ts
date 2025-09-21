@@ -9,8 +9,11 @@ class ApiClient {
   private token: string | null = null;
 
   constructor() {
-    this.client = new GraphQLClient(endpoint);
-    
+    this.client = new GraphQLClient(endpoint, {
+      // Don't throw on GraphQL errors, let us handle them
+      errorPolicy: 'all'
+    });
+
     // Load token from localStorage on client side
     if (browser) {
       this.token = localStorage.getItem('auth_token');
@@ -39,36 +42,46 @@ class ApiClient {
   }
 
   async request<T = any>(query: string, variables?: any): Promise<T> {
-    try {
-      return await this.client.request<T>(query, variables);
-    } catch (error: any) {
-      console.error('GraphQL Error:', error);
+    const response = await this.client.request<T>(query, variables);
+
+    // Check for GraphQL errors in the response
+    if (response && typeof response === 'object' && 'errors' in response) {
+      const errors = (response as any).errors;
 
       // Handle specific case where deleteTask succeeds but returns errors
-      if (this.isDeleteTaskWithErrors(query, error)) {
+      if (this.isDeleteTaskWithErrors(query, errors)) {
         console.warn('Delete task succeeded despite errors, continuing...');
-        // Return the data if available, otherwise return a default success response
-        if (error.response?.data) {
-          return error.response.data;
+
+        // Extract the data if available
+        const data = (response as any).data;
+        if (data) {
+          return data;
         }
+
         // For deleteTask, return { deleteTask: true } as default success
         if (query.includes('deleteTask')) {
           return { deleteTask: true } as T;
         }
       }
 
-      throw error;
+      // For other errors, throw them
+      console.error('GraphQL Error:', errors);
+      throw new Error(`GraphQL Error: ${errors.map((e: any) => e.message).join(', ')}`);
     }
+
+    return response;
   }
 
-  private isDeleteTaskWithErrors(query: string, error: any): boolean {
+  private isDeleteTaskWithErrors(query: string, errors: any[]): boolean {
     return query.includes('deleteTask') &&
-           error.response?.data &&
-           error.response?.errors &&
-           error.response?.errors.some((err: any) =>
-             err.extensions?.classification === 'INTERNAL_ERROR' ||
-             err.message?.includes('INTERNAL_ERROR')
-           );
+           errors &&
+           errors.some((err: any) => {
+             // Check if this error is for deleteTask and is an INTERNAL_ERROR
+             const isDeleteTaskError = err.path && err.path.includes('deleteTask');
+             const isInternalError = err.extensions?.classification === 'INTERNAL_ERROR' ||
+                                   err.message?.includes('INTERNAL_ERROR');
+             return isDeleteTaskError && isInternalError;
+           });
   }
 
   async authRequest(endpoint: string, data: any) {

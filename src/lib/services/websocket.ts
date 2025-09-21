@@ -70,7 +70,11 @@ class WebSocketService {
       switch (notification.type) {
         case 'TASK_CREATED':
         case 'TASK_UPDATED':
+          tasksStore.load();
+          break;
         case 'TASK_DELETED':
+          // Don't reload all tasks for deletions - the frontend handles this optimistically
+          break;
         case 'BULK_OPERATION':
           tasksStore.load();
           break;

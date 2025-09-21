@@ -155,7 +155,6 @@ function createTasksStore() {
         const result = await deleteTask(taskId);
 
         // If the API call succeeded (returned true), consider it successful
-        // even if there were GraphQL errors (like INTERNAL_ERROR for logging)
         if (result === true) {
           // Clear any error state since the deletion succeeded
           update(state => ({ ...state, error: null }));
@@ -165,11 +164,8 @@ function createTasksStore() {
         // If we get here, the API call failed and returned false
         throw new Error('Delete operation failed');
       } catch (error: any) {
-        // Only rollback if it's not a known GraphQL error that we can handle
-        const isKnownGraphQLError = error.message?.includes('INTERNAL_ERROR') ||
-                                   error.message?.includes('GraphQL Error');
-
-        if (originalTask && !isKnownGraphQLError) {
+        // Rollback the optimistic update if there was an error
+        if (originalTask) {
           update(state => {
             const newTasks = [...state.tasks];
             newTasks.splice(originalIndex, 0, originalTask!);
@@ -179,13 +175,7 @@ function createTasksStore() {
               error: error instanceof Error ? error.message : 'Failed to delete task'
             };
           });
-        } else if (isKnownGraphQLError) {
-          // For known GraphQL errors that we've handled gracefully,
-          // just clear the error state since the operation likely succeeded
-          update(state => ({ ...state, error: null }));
-          console.warn('Delete task completed with known GraphQL error:', error.message);
         }
-        throw error;
       }
     },
 
