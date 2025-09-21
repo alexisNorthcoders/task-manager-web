@@ -45,6 +45,17 @@ export async function getCurrentUser(): Promise<User | null> {
     return data.currentUser;
   } catch (error) {
     console.error('Failed to fetch current user:', error);
+
+    // If this is an authentication error, rethrow it so the auth store can handle it
+    if (error instanceof Error && (
+      error.message.includes('Authentication error') ||
+      error.message.includes('Unauthorized') ||
+      error.message.includes('401')
+    )) {
+      throw error;
+    }
+
+    // For other errors (network, server errors), return null but don't fail completely
     return null;
   }
 }

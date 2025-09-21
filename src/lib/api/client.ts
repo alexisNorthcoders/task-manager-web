@@ -41,7 +41,7 @@ class ApiClient {
     }
   }
 
-  async request<T = any>(query: string, variables?: any): Promise<T> {
+  async request<T = any>(query: string, variables?: any, options?: { throwOnError?: boolean }): Promise<T> {
     const response = await this.client.request<T>(query, variables);
 
     // Check for GraphQL errors in the response
@@ -64,9 +64,27 @@ class ApiClient {
         }
       }
 
-      // For other errors, throw them
-      console.error('GraphQL Error:', errors);
-      throw new Error(`GraphQL Error: ${errors.map((e: any) => e.message).join(', ')}`);
+      // Check if this is an authentication error
+      const isAuthError = errors.some((err: any) =>
+        err.message?.includes('Unauthorized') ||
+        err.message?.includes('Authentication required') ||
+        err.message?.includes('JWT') ||
+        err.extensions?.code === 'UNAUTHENTICATED' ||
+        err.extensions?.code === 'UNAUTHORIZED'
+      );
+
+      if (isAuthError) {
+        console.warn('Authentication error detected:', errors);
+        throw new Error(`Authentication error: ${errors.map((e: any) => e.message).join(', ')}`);
+      }
+
+      // For other errors, throw them unless explicitly told not to
+      if (options?.throwOnError !== false) {
+        console.error('GraphQL Error:', errors);
+        throw new Error(`GraphQL Error: ${errors.map((e: any) => e.message).join(', ')}`);
+      } else {
+        console.warn('GraphQL Error (not thrown):', errors);
+      }
     }
 
     return response;

@@ -92,11 +92,9 @@ class WebSocketService {
 
 export const webSocketService = new WebSocketService();
 
+// Only auto-connect if explicitly requested and authenticated
+// Connection should be managed by the auth store and layout component
 if (typeof window !== 'undefined') {
-  setTimeout(() => {
-    webSocketService.connect();
-  }, 100);
-
   window.addEventListener('beforeunload', () => {
     webSocketService.disconnect();
   });
