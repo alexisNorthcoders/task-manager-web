@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import ProtectedRoute from '$lib/components/ProtectedRoute.svelte';
+  import ConfirmationDialog from '$lib/components/ConfirmationDialog.svelte';
   import { getTaskTemplates, deleteTaskTemplate, createTaskFromTemplate } from '$lib/api/tasks';
   import { usersStore } from '$lib/stores/users';
   import type { TaskTemplate } from '$lib/types';
@@ -14,6 +15,11 @@
   let selectedTemplate: TaskTemplate | null = null;
   let selectedUserIds: string[] = [];
   let createFromTemplateLoading = false;
+  
+  // Confirmation dialog state
+  let showDeleteConfirm = false;
+  let templateToDelete: TaskTemplate | null = null;
+  let deleteConfirmLoading = false;
 
   onMount(async () => {
     await loadTemplates();
@@ -32,15 +38,30 @@
     }
   }
 
-  async function handleDeleteTemplate(template: TaskTemplate) {
-    if (!confirm(`Are you sure you want to delete the template "${template.name}"?`)) return;
+  function handleDeleteTemplate(template: TaskTemplate) {
+    templateToDelete = template;
+    showDeleteConfirm = true;
+  }
 
+  async function confirmDeleteTemplate() {
+    if (!templateToDelete) return;
+    
+    deleteConfirmLoading = true;
     try {
-      await deleteTaskTemplate(template.id);
+      await deleteTaskTemplate(templateToDelete.id);
       await loadTemplates(); // Refresh the list
+      showDeleteConfirm = false;
+      templateToDelete = null;
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to delete template';
+    } finally {
+      deleteConfirmLoading = false;
     }
+  }
+
+  function cancelDeleteTemplate() {
+    showDeleteConfirm = false;
+    templateToDelete = null;
   }
 
   function openCreateFromTemplate(template: TaskTemplate) {
@@ -258,12 +279,26 @@
       </div>
     </div>
   {/if}
+
+  <!-- Confirmation Dialog -->
+  <ConfirmationDialog
+    bind:show={showDeleteConfirm}
+    title="Delete Template"
+    message="Are you sure you want to delete the template &quot;{templateToDelete?.name}&quot;? This action cannot be undone."
+    confirmText="Delete"
+    cancelText="Cancel"
+    variant="danger"
+    bind:isLoading={deleteConfirmLoading}
+    on:confirm={confirmDeleteTemplate}
+    on:cancel={cancelDeleteTemplate}
+  />
 </ProtectedRoute>
 
 <style>
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
