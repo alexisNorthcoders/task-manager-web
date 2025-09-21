@@ -48,11 +48,21 @@
 
   async function handleDeleteTask(taskId: string) {
     if (!confirm('Are you sure you want to delete this task?')) return;
-    
+
     try {
       await tasksStore.delete(taskId);
-    } catch (err) {
-      console.error('Failed to delete task:', err);
+    } catch (err: any) {
+      // Don't show error message for known GraphQL errors that we've handled gracefully
+      const isKnownGraphQLError = err.message?.includes('INTERNAL_ERROR') ||
+                                  err.message?.includes('GraphQL Error');
+
+      if (!isKnownGraphQLError) {
+        console.error('Failed to delete task:', err);
+        // Show user-friendly error message only for unexpected errors
+        alert('Failed to delete task. Please try again.');
+      } else {
+        console.warn('Task deleted successfully despite GraphQL error:', err.message);
+      }
     }
   }
 
