@@ -110,7 +110,7 @@
       };
 
       await tasksStore.create(taskData);
-      goto('/tasks');
+      goto('/dashboard');
     } catch (err) {
       console.error('Failed to create task:', err);
       error = err instanceof Error ? err.message : 'Failed to create task';

@@ -51,7 +51,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function uploadAvatar(file: File): Promise<UploadAvatarResponse> {
   const formData = new FormData();
-  formData.append('avatar', file);
+  formData.append('file', file);
 
   return apiClient.uploadFile('user/avatar', formData);
 }
