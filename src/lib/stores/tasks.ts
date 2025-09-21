@@ -152,9 +152,19 @@ function createTasksStore() {
         });
 
         // Make API call
-        await deleteTask(taskId);
-      } catch (error) {
-        // Rollback on error
+        const result = await deleteTask(taskId);
+
+        // If the API call succeeded (returned true), consider it successful
+        if (result === true) {
+          // Clear any error state since the deletion succeeded
+          update(state => ({ ...state, error: null }));
+          return;
+        }
+
+        // If we get here, the API call failed and returned false
+        throw new Error('Delete operation failed');
+      } catch (error: any) {
+        // Rollback the optimistic update if there was an error
         if (originalTask) {
           update(state => {
             const newTasks = [...state.tasks];
@@ -166,7 +176,6 @@ function createTasksStore() {
             };
           });
         }
-        throw error;
       }
     },
 

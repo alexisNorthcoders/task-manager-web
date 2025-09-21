@@ -7,7 +7,6 @@
   import Task from './Task.svelte';
   import type { Task as TaskType, BulkUpdateTaskInput } from '$lib/types';
   
-  let filteredTasks: TaskType[] = [];
   let showBulkActions = false;
   let bulkOperationLoading = false;
   let bulkOperationError = '';
@@ -15,19 +14,14 @@
   // Reactive bulk actions visibility
   $: showBulkActions = $selectedTaskIds.size > 0;
 
-  onMount(async () => {
-    await tasksStore.load();
-    // Apply filters after loading tasks
-    applyFilters();
-  });
-
-  function applyFilters() {
+  // Reactive filtered tasks
+  $: filteredTasks = (() => {
     let filtered = [...$tasksStore.tasks];
 
     // Apply search filter
     if ($searchQuery && $searchQuery.trim()) {
       const query = $searchQuery.toLowerCase();
-      
+
       filtered = filtered.filter(task => {
         const titleMatch = task.title && task.title.toLowerCase().includes(query);
         const descMatch = task.description && task.description.toLowerCase().includes(query);
@@ -35,8 +29,8 @@
       });
     }
 
-    filteredTasks = filtered;
-  }
+    return filtered;
+  })();
 
   async function toggleTaskCompletion(task: TaskType) {
     try {
@@ -48,11 +42,13 @@
 
   async function handleDeleteTask(taskId: string) {
     if (!confirm('Are you sure you want to delete this task?')) return;
-    
+
     try {
       await tasksStore.delete(taskId);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete task:', err);
+      // Show user-friendly error message for any unexpected errors
+      alert('Failed to delete task. Please try again.');
     }
   }
 
@@ -61,12 +57,6 @@
   $: todoTasks = filteredTasks.filter(task => task.status === 'TODO');
   $: inProgressTasks = filteredTasks.filter(task => task.status === 'IN_PROGRESS');
   $: completedTasks = filteredTasks.filter(task => task.status === 'COMPLETED' || task.completed);
-  
-
-  // Reactive updates when filters change or tasks change
-  $: {
-    applyFilters();
-  }
 
   // Bulk operations
   async function handleBulkDelete() {
